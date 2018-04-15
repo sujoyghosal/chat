@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<body>
+    <div ng-app="myApp" ng-controller="dealCtrl" ng-init="sortfield='modified'">
+        <button class="btn btn-primary btn-md" ng-click="Getdeals('email',login_email, true); spinner = true;">VIEW STUFF I OFFERED</button>
+        <br>
+        <i ng-show="spinner" class="fa fa-spinner fa-pulse fa-3x fa-fw"></i> {{found}}
+        <br>
+        <div class="container" ng-show="alldeals">
+            <label><i class="fa fa-arrow-circle-up fa-2x" ng-show="!reverse" ng-click="reverse = !reverse;"> </i>
+                <i class="fa fa-arrow-circle-down fa-2x" ng-show="reverse" ng-click="reverse = !reverse;"></i> &nbsp;&nbsp;&nbsp;&nbsp;
+                    <select name="sort" ng-model="sortfield">
+                        <option value="modified" selected>Date</option>                                       
+                         <option value="itemtype">Item Type</option>
+                        <option value="address">Address</option>
+                    </select>
+                    <br>
+            </label>&nbsp;&nbsp;
+            <label>
+                <input type="text" placeholder="Search items, places etc." ng-model="searchText">&nbsp;&nbsp;
+                <i class="fa fa-search fa-2x"></i> 
+            </label>
+            <table class="table table-responsive">
+                <tr ng-repeat="row in citydeals | orderBy : sortfield : !reverse | filter:searchText">
+                    <td ng-init="stackicon = row.fa_icon + ' fa-stack-1x'">
+                        <span class="fa-stack fa-2x">
+                                    <i class="fa fa-circle fa-stack-2x icon-background4"></i>
+                                    <i class={{stackicon}}></i>
+                        </span> &nbsp;
+                        <span class="fa-stack fa-2x" ng-show="isEmergency(row.itemtype)">
+                            <i class="fa fa-circle fa-stack-2x icon-backgroundemergency"></i>
+                            <i class="fa fa-plus-square fa-stack-1x"></i>
+                          </span> &nbsp;
+
+                        <!--{{ TranslateEventToEnglish(row.itemtype); english }}-->
+                        <br> {{row.items}} At {{row.address}}; posted on {{row.modified | date:'medium'}}<br>
+                        <center><span ng-show="!mobileDevice" style="display:inline-block; width: 36px;">
+                                <li class="dropdown" ng-show="!mobileDevice">
+                                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-share-square fa-2x"></i>  <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <span ng-show="!mobileDevice" style="display:inline-block; width: 36px;"></span>
+                                    <a href='' ng-show="!mobileDevice" ng-click="SocialShare(row, 'twitter')">
+                                        <i class="fa fa-twitter fa-2x"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <span ng-show="!mobileDevice" style="display:inline-block; width: 36px;"></span>
+                                    <a href='' ng-show="!mobileDevice" ng-click="SocialShare(row, 'facebook')">
+                                        <i class="fa fa-facebook fa-2x"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <span ng-show="!mobileDevice" style="display:inline-block; width: 36px;"></span>
+                                    <a href='' ng-show="!mobileDevice" ng-click="SocialShare(row, 'google')">
+                                        <i class="fa fa-google-plus fa-2x"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <span ng-show="!mobileDevice" style="display:inline-block; width: 36px;"></span>
+                                    <a href='' ng-show="!mobileDevice" ng-click="SocialShare(row, 'linkedin')">
+                                        <i class="fa fa-linkedin fa-2x"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <span ng-show="!mobileDevice" style="display:inline-block; width: 36px;"></span>
+                                    <a href='' ng-show="!mobileDevice" ng-click="SocialShare(row, 'pinterest')">
+                                        <i class="fa fa-pinterest fa-2x"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                            </li>
+                            </span>
+                            <span ng-show="mobileDevice" style="display:inline-block; width: 36px;"></span>
+                            <a href='' ng-show="mobileDevice" ng-click="SocialShare(row, 'FreeCycle New Event Alert')"><i class="fa fa-share-square-o fa-2x"></i></a>
+                        </center>
+                    </td>
+                    <td>
+                        <i ng-click="CancelOffer(row); spinner=true;" class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

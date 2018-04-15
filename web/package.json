@@ -1,0 +1,16 @@
+{
+    "name": "ChatWeb",
+    "version": "0.0.1",
+    "description": "Chat Web App",
+    "main": "ChatWeb.js",
+    "scripts": {
+        "start": "node ChatWeb.js"
+    },
+    "dependencies": {
+        "express": "3.x.x",
+        "socket.io": "x.x.x",
+        "express-socket.io": "x.x.x",
+        "angular-ui-bootstrap": "x.x.x",
+        "helmet": "3.9.0"
+    }
+}

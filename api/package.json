@@ -1,0 +1,21 @@
+{
+    "name": "ChatAPI",
+    "version": "0.0.0",
+    "description": "Chat API",
+    "main": "events.js",
+    "scripts": {
+        "start": "node events.js"
+    },
+    "engines": {
+        "node": ">=6.11.2"
+    },
+    "dependencies": {
+        "bcrypt": "1.0.3",
+        "express": "3.x.x",
+        "rand-token": "^0.4.0",
+        "usergrid": "0.10.11",
+        "nodemailer": "~4.4.0",
+        "socket.io": "2.0.4",
+        "body-parser": "1.18.2"
+    }
+}
