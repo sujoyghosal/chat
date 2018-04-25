@@ -257,8 +257,8 @@ app.service("UserService", function() {
 var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
-//var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
-var BASEURL_PERSONAL = "http://localhost:9000";
+var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
+//var BASEURL_PERSONAL = "http://localhost:9000";
 var BASEURL = BASEURL_PERSONAL;
 
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
