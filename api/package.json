@@ -10,9 +10,11 @@
         "node": ">=6.11.2"
     },
     "dependencies": {
-        "bcrypt": "1.0.3",
+        "bcrypt": "2.0.0",
         "express": "3.x.x",
         "rand-token": "^0.4.0",
+        "watson-developer-cloud": "*",
+        "cfenv": "1.0.x",
         "usergrid": "0.10.11",
         "nodemailer": "~4.4.0",
         "socket.io": "2.0.4",

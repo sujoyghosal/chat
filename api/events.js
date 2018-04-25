@@ -15,8 +15,8 @@ var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEGUIURL_PIVOTAL = "http://sujoyfreecycleweb-plutonic-forensics.cfapps.io";
 var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEGUIURL_BLUEMIX = "http://sujoyfreecycleweb-nonfloriferous-capacitation.mybluemix.net";
-var BASEURL_PERSONAL = "https://dealseapi.mybluemix.net";
-var BASEGUIURL_PERSONAL = "https://dealsweb.mybluemix.net";
+var BASEURL_PERSONAL = "https://chatapi.mybluemix.net";
+var BASEGUIURL_PERSONAL = "https://chatweb.mybluemix.net";
 
 var BASEURL = BASEURL_PERSONAL;
 //var BASEURL = "http://sujoyghosal-test.apigee.net/deals"
@@ -29,14 +29,23 @@ var APPNAME_DEV = 'deals';
 var CLIENTID_DEV = 'b3U6qZdN9MaZEeanNBIuBzeXfQ';
 var CLIENTSECRET_DEV = 'b3U6-cw_nkkX9VRDgrvKwi0ofs2Sr4E';
 
-var APPNAME_PROD = 'deals';
-var CLIENTID_PROD = 'b3U6qZdN9MaZEeanNBIuBzeXfQ';
-var CLIENTSECRET_PROD = 'b3U6-cw_nkkX9VRDgrvKwi0ofs2Sr4E';
+var APPNAME_PROD = 'chat';
+var CLIENTID_PROD = 'YXA6KuEkeEPLEeiamRI7Ehc1Lg';
+var CLIENTSECRET_PROD = 'YXA6NGHLq3sqIKwleUqvEtMKiNHCW5k';
 
 var APPNAME = APPNAME_PROD;
 var CLIENTID = CLIENTID_PROD;
 var CLIENTSECRET = CLIENTSECRET_PROD;
-
+var PersonalityInsightsV3 = require('watson-developer-cloud/personality-insights/v3');
+// cfenv provides access to your Cloud Foundry environment
+// for more info, see: https://www.npmjs.com/package/cfenv
+var cfenv = require('cfenv');
+var personality_insights = new PersonalityInsightsV3({
+    "url": "https://gateway.watsonplatform.net/personality-insights/api",
+    "username": "7726e370-8b95-4971-a2cb-baa8e3da94ce",
+    "password": "HJr6PB72wvpW",
+    version_date: '2016-10-19'
+});
 var transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -226,6 +235,35 @@ function getusersingroup(req, res) {
         }
     });
 }
+app.get("/allusers", function(req, res) {
+    if (loggedIn === null) {
+        logIn(req, res, getAllUsers);
+    } else {
+        //userid = req.param("userid");
+        getAllUsers(req, res);
+    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
+});
+
+//Call request to initiate the API call
+function getAllUsers(req, res) {
+    loggedIn.createCollection({ type: "users?limit=100" }, function(
+        err,
+        users
+    ) {
+        //    loggedIn.createCollection(options, function(err, ngccnotifications) {
+        //  loggedIn.request({ options, function(err, ngccnotifications) {
+        if (err) {
+            res.jsonp(500, { error: JSON.stringify(err) });
+            return;
+        }
+        var allUsers = [];
+        while (users.hasNextEntity()) {
+            var aUser = users.getNextEntity().get();
+            allUsers.push(aUser);
+        }
+        res.jsonp(allUsers);
+    });
+}
 app.get("/getgroupbyname", function(req, res) {
     var group = req.param("group");
     group_query = {
@@ -248,6 +286,22 @@ function getgroupbyname(req, res) {
         }
     });
 }
+app.get('/personality', function(req, res) {
+    var text = req.param('text');
+    var params = {
+        "text": text
+    }
+    personality_insights.profile({
+            text: text,
+            consumption_preferences: true
+        },
+        function(err, response) {
+            if (err) {
+                res.jsonp(err);
+            } else
+                res.jsonp(response);
+        });
+});
 app.get("/getgroupsforuser", function(req, res) {
     var uuid = req.param("uuid");
     group_query = {
@@ -838,10 +892,11 @@ function createevent(e, req, res) {
         }
     });
 }
+
 app.post("/sendchat", function(req, res) {
     var t = new Date();
     req.body.name = req.body.email + "-" + t;
-    console.log("####Create Event Request Body: " + req.body);
+    console.log("####Create Chat Event Request Body: " + JSON.stringify(req.body));
     var options = {
         method: "POST",
         endpoint: "chatevents",
@@ -849,10 +904,10 @@ app.post("/sendchat", function(req, res) {
     };
     if (loggedIn === null) {
         logIn(req, res, function() {
-            createevent(options, req, res);
+            sendchat(options, req, res);
         });
     } else {
-        createevent(options, req, res);
+        sendchat(options, req, res);
     }
 });
 
@@ -861,16 +916,15 @@ function sendchat(e, req, res) {
         if (err) {
             res.send("ERROR");
         } else {
-            console.log("#######CreateEvents Success!!!!!");
+            console.log("#######CreateEvents Success!!!!! " + JSON.stringify(data));
             if (mysocket) {
-                console.log("##### Sending event " + data.entities[0].group_name);
+                console.log("##### Sending event ");
                 //mysocket.broadcast.emit('matchingevent', o);
-                io.sockets.in(data.entities[0].group_name).emit('matchingevent', data);
+                io.sockets.in(req.param('email')).emit('chatevent', data);
                 //io.sockets.emit('matchingevent', data);
-                console.log("####Sent matchingevent");
-                var msg = JSON.stringify(data.entities[0].items + "@: " +
-                    data.entities[0].address + ". Contact " + data.entities[0].postedby + ": " +
-                    data.entities[0].phone_number + " / " + data.entities[0].email);
+                console.log("####Sent chatevent to email " + req.param('email'));
+                var msg = JSON.stringify(data.entities[0].sentby + ": " +
+                    data.entities[0].text);
                 //sendFCMPush("FreeCycle Event", msg, data.entities[0].group_name.replace(/-/g, '_'));
                 console.log("#####Event Object = " + JSON.stringify(data));
                 res.jsonp(data);
@@ -1560,7 +1614,7 @@ var login_query = "";
 // We need this for UserGrid authentication
 function logIn(req, res, next) {
     console.log("Logging in as %s", "sujoy");
-    ug.login("sujoy", "Kolkata1", function(err) {
+    ug.login("sujoyghosal", "Kolkata1", function(err) {
         if (err) {
             console.log("Login failed: %s", JSON.stringify(err));
             res.jsonp(500, { error: err });
