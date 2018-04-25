@@ -21,7 +21,8 @@
                         <select class="form-control" id="targetuser" name="targetuser" selected="{{ targetChatuserName }}" ng-change="StartChat(chat)" ng-model="chat.targetuser" style="width:200px">  
                             <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in allusers">{{ x.fullname }}</option>
                         </select>
-                        <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="AnalysePersonality()">Analyse Personality of {{ targetChatuserName }}</button>
+                        <!--                       <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="location = '/personality';personality.text = secondPersonTextArray.toString();">Analyse Personality of {{ targetChatuserName }}</button>-->
+                        <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="OpenPersonalityPage()">Analyse Personality of {{ targetChatuserName }}</button>
                     </p>
                     <br>
                     <div>

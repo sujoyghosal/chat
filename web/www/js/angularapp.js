@@ -24,7 +24,7 @@ app.config([
                 controller: "ChatCtrl"
             })
             .when("/personality", {
-                templateUrl: "chatbox.html",
+                templateUrl: "personality.html",
                 controller: "ChatCtrl"
             })
             .when("/register", {
@@ -293,6 +293,16 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $rootScope.mobileDevice = false;
     $scope.chatbox = "";
     $rootScope.chatArray = [];
+    //$rootScope.personalitytext = null;
+    $scope.loading = false;
+    $scope.showValues = false;
+    $scope.showPersonality = false;
+    $scope.showNeeds = false;
+    $scope.showConsumption = false;
+    $scope.resultsReady = false;
+    $scope.LOL = false;
+    $scope.errorMsg = '';
+    $scope.sampleText = "Your literature review should be appropriate to the kind of paper you are writing. If it is a thesis, you should strive for completeness, both in reviewing all the relevant literature and in making the main arguments clear to a reader who is unfamiliar with that literature. For a course paper or journal article, it is sufficient to review the main papers that are directly relevant. Again, you should assume that your reader has not read them, but you need not go into detail. You should review only those points that are relevant to the arguments you will make. Do not say that ``X found Y'' or ``demonstrated'' if X's conclusions don't follow from X's results. You can use words like ``X claimed to show that Y'' or ``suggested that'' when you are not sure. If you see a flaw, you can add, ``However ...''. Try to avoid expressions like ``Unfortunately, Smith and Jones neglected to examine [precisely what you are examining].'' It might have been unfortunate for them or for the field, but it is fortunate for you, and everyone knows it.";
     $scope.events = [];
     //$rootScope.allusers = [];
     $rootScope.secondPersonTextArray = [];
@@ -709,26 +719,20 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         });
     };
 
-    $scope.AnalysePersonality = function() {
+    $scope.AnalysePersonality = function(text) {
         //  alert($scope.address);
-        $scope.showValues = false;
-        $scope.showPersonality = false;
-        $scope.showNeeds = false;
-        $scope.showConsumption = false;
-        $scope.resultsReady = false;
-        $scope.loading = true;
-        $scope.LOL = false;
-        $scope.errorMsg = '';
-        if (!$rootScope.secondPersonTextArray.toString() || $rootScope.secondPersonTextArray.toString().length < 100) {
+        console.log("Analysing personality text: " + text);
+        if (!text || text.length < 100) {
             $scope.LOL = true;
         }
         $http({
             method: "GET",
-            url: BASEURL + "/personality?text=" + $rootScope.secondPersonTextArray.toString()
+            url: "https://personality-analyser-sujoy.mybluemix.net/personality?text=" + text
         }).then(function mySucces(response) {
             console.log(JSON.stringify(response));
             $scope.response = response;
             $scope.resultsReady = true;
+            $scope.LOL = false;
             $scope.loading = false;
             $scope.firsttime = true;
             if (response.data.hasOwnProperty('error')) {
@@ -894,7 +898,11 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             message: "Your deal offer is in 15min. Please start."
         });
     }
-
+    $scope.OpenPersonalityPage = function() {
+        $rootScope.personalitytext = $rootScope.secondPersonTextArray.toString();
+        console.log("Second Person Text Is: " + $rootScope.personalitytext);
+        $location.path('/personality');
+    }
     $scope.SendPush = function(gcmids, text) {
         if (!gcmids || !text) return;
         if (text.length === 0) {
