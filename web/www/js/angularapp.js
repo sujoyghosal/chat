@@ -19,6 +19,14 @@ app.config([
                 templateUrl: "home.html",
                 controller: "LoginCtrl"
             })
+            .when("/chat", {
+                templateUrl: "chatbox.html",
+                controller: "ChatCtrl"
+            })
+            .when("/personality", {
+                templateUrl: "chatbox.html",
+                controller: "ChatCtrl"
+            })
             .when("/register", {
                 templateUrl: "Register.html",
                 controller: "RegisterCtrl"
@@ -37,51 +45,51 @@ app.config([
             })
             .when("/getdeal", {
                 templateUrl: "Listdeals.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/dealsaccepted", {
                 templateUrl: "MyPickupList.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/offerdeal", {
                 templateUrl: "Offerdeal.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/offershistory", {
                 templateUrl: "MyOffers.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/createneed", {
                 templateUrl: "CreateNeed.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/createemergency", {
                 templateUrl: "CreateEmergency.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/viewneeds", {
                 templateUrl: "NeedsNearby.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/viewemergencies", {
                 templateUrl: "ViewEmergencies.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/settings", {
                 templateUrl: "settings.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/subscribe", {
                 templateUrl: "Subscribe.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/sendnotification", {
                 templateUrl: "SendPush.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/notifications", {
                 templateUrl: "Notifications.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/resetpw", {
                 templateUrl: "ResetPassword.html",
@@ -89,14 +97,14 @@ app.config([
             })
             .when("/index", {
                 templateUrl: "index.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .when("/contactus", {
                 templateUrl: "ContactUs.html",
-                controller: "dealCtrl"
+                controller: "ChatCtrl"
             })
             .otherwise({
-                redirectTo: "/home"
+                redirectTo: "/login"
             });
     }
 ]);
@@ -249,13 +257,13 @@ app.service("UserService", function() {
 var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
-var BASEURL_PERSONAL = "https://dealsapi-hawklike-generaliser.mybluemix.net";
-//var BASEURL_PERSONAL = "http://localhost:9000";
-var BASEURL = BASEURL_LOCAL;
+//var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
+var BASEURL_PERSONAL = "http://localhost:9000";
+var BASEURL = BASEURL_PERSONAL;
 
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
-app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
+app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
     $scope.spinner = false;
     $scope.alldeals = false;
     $scope.allneeds = false;
@@ -271,7 +279,7 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.settings = adjustsettings(UserService.getLoggedIn().settings);
     $scope.selectedto = undefined;
     $scope.selectedfrom = undefined;
-    $scope.login_email = UserService.getLoggedIn().email;
+    $rootScope.login_email = UserService.getLoggedIn().email;
     $scope.login_fullname = UserService.getLoggedIn().fullname;
     //$scope.login_phone = UserService.getLoggedIn().phone;
     $scope.found = "";
@@ -283,7 +291,11 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.emergency = false;
     $scope.eventsCount = 0;
     $rootScope.mobileDevice = false;
+    $scope.chatbox = "";
+    $rootScope.chatArray = [];
     $scope.events = [];
+    //$rootScope.allusers = [];
+    $rootScope.secondPersonTextArray = [];
     var today = new Date().toISOString().slice(0, 10);
     $rootScope.lastUUID = "";
     $scope.today = {
@@ -306,10 +318,16 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $rootScope.$on("CallGetGroupsForUserMethod", function() {
         $scope.GetGroupsForUser();
     });
+    $rootScope.$on("CallSetupWebsocketsMethod", function() {
+        $scope.setupWebSockets(UserService.getLoggedIn().email, null);
+    });
+    $rootScope.$on("CallGetAllUsersMethod", function() {
+        $scope.GetAllUsers();
+    });
     $rootScope.$on('$routeChangeStart', function(event, next) {
 
-        if (!UserService.getLoggedInStatus() && ("/offerdeal" === $location.path() ||
-                "/subscribe" === $location.path() || "/notifications" === $location.path() ||
+        if (!UserService.getLoggedInStatus() && ("/home" === $location.path() || "/chat" === $location.path() ||
+                "/subscribe" === $location.path() || "/notifications" === $location.path() || "/personality" === $location.path() ||
                 "/updatepassword" === $location.path() || "/createneed" === $location.path() ||
                 "/createemergency" === $location.path() || "/offershistory" === $location.path())) {
             //console.log("User not logged in for access to " + $location.path());
@@ -322,7 +340,6 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
             $location.path("/home");
             return;
         }
-
     });
 
     $scope.GeoCodeAddress = function(offer, func) {
@@ -519,29 +536,38 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
         $scope.stackicon = icon + ' fa-stack-1x';
         return icon + ' fa-stack-1x';
     }
+    $scope.StartChat = function(chat) {
+        //alert(chat.targetuser);
+        $rootScope.targetChatuser = chat.targetuser;
+        var user = $scope.GetUserFromEmail(chat.targetuser);
+        $rootScope.targetChatuserName = user.fullname;
+    };
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
+        var msg = {
+            "sentby": $rootScope.username,
+            "text": chat.text
+        };
+        $rootScope.chatArray.push(msg);
+
+        $scope.setupWebSockets($rootScope.targetChatuser, 'send');
         var now = new Date();
         $scope.loginResult = "Sent Request";
         var postURL = BASEURL + "/sendchat";
         var reqObj = {
-            email: chat.email,
-            sentby: chat.name,
+            email: $rootScope.targetChatuser,
+            sentby: UserService.getLoggedIn().fullname,
+            sentbyemail: UserService.getLoggedIn().email,
             time: now,
-            phone_number: chat.phone,
-            city: chat.city,
             text: chat.text,
             fa_icon: $scope.GetFontAwesomeIconsForCategory(null)
         };
         postURL = encodeURI(postURL);
         $http.post(postURL, JSON.stringify(reqObj)).then(
             function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
                 console.log("Send Chat Response:" + JSON.stringify(response));
                 $scope.loginResult = "Success";
-                Notification.success({ message: "Good job! Successufully Published Your Chat text. Thank You!", positionY: 'bottom', positionX: 'center' });
-                //Notification.success({message: 'Success Top Left', positionX: 'left'});
+                //Notification.success({ message: "Good job! Successufully Published Your Chat text. Thank You!", positionY: 'bottom', positionX: 'center' });
                 $scope.spinner = false;
                 $scope.status = "response.statusText";
                 //schedulePush(new Date());
@@ -555,6 +581,16 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 $scope.status = error.statusText;
             }
         );
+    };
+    $scope.GetUserFromEmail = function(email) {
+        var user = {};
+        for (i = 0; i < $rootScope.allusers.length; i++) {
+            if ($rootScope.allusers[i].email === email) {
+                user = $rootScope.allusers[i];
+                break;
+            }
+        }
+        return user;
     };
     $scope.SendOffer = function(offer) {
         $scope.loginResult = "";
@@ -650,63 +686,116 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
             }
         );
     };
-    $scope.setupWebSockets = function(purpose, arg) {
+
+    $scope.AnalyseTone = function(text) {
+        //  alert($scope.address);
+        $scope.resultsready = false;
+        $scope.loading = true;
+        $http({
+            method: "GET",
+            url: encodeURI("https://toneanalysis-sujoy.mybluemix.net/analysetone?text=" + text)
+        }).then(function mySucces(response) {
+            $scope.response = $rootScope.toneResponse;
+
+            for (i = 0; i < response.data.document_tone.tone_categories[0].tones.length; i++) {
+                console.log("Tone Name=" + response.data.document_tone.tone_categories[0].tones[i].tone_name);
+                console.log("Tone Score=" + response.data.document_tone.tone_categories[0].tones[i].score);
+            }
+            $scope.loading = false;
+            $scope.resultsready = true;
+        }, function myError(response) {
+            $scope.response = response;
+            $scope.loading = false;
+        });
+    };
+
+    $scope.AnalysePersonality = function() {
+        //  alert($scope.address);
+        $scope.showValues = false;
+        $scope.showPersonality = false;
+        $scope.showNeeds = false;
+        $scope.showConsumption = false;
+        $scope.resultsReady = false;
+        $scope.loading = true;
+        $scope.LOL = false;
+        $scope.errorMsg = '';
+        if (!$rootScope.secondPersonTextArray.toString() || $rootScope.secondPersonTextArray.toString().length < 100) {
+            $scope.LOL = true;
+        }
+        $http({
+            method: "GET",
+            url: BASEURL + "/personality?text=" + $rootScope.secondPersonTextArray.toString()
+        }).then(function mySucces(response) {
+            console.log(JSON.stringify(response));
+            $scope.response = response;
+            $scope.resultsReady = true;
+            $scope.loading = false;
+            $scope.firsttime = true;
+            if (response.data.hasOwnProperty('error')) {
+                $scope.errorMsg = response.data.error;
+                $scope.LOL = true;
+                console.log($scope.errorMsg);
+            }
+        }, function myError(response) {
+            $scope.response = response;
+            $scope.loading = false;
+        });
+    };
+
+    $scope.setupWebSockets = function(email, arg) {
         console.log("#####Setting up listener for alerts");
         socket = io.connect(BASEURL);
         socket.on('connect', function() {
             console.log("##### Connected to server socket!");
-            for (var i = 0; i < $scope.usergroups.length; i++) {
+            console.log("#### Joining events channel " + UserService.getLoggedIn().email);
+            socket.emit('room', UserService.getLoggedIn().email);
+            /*for (var i = 0; i < $scope.usergroups.length; i++) {
                 //socket.join($scope.usergroups[i].name);
                 room = $scope.usergroups[i].name;
                 console.log("#### Joining events channel " + room);
-                socket.emit('room', room);
+                socket.emit('room', email);
                 console.log("Test message");
-            }
+            }*/
         });
-        if (purpose && purpose === "init") {
-            for (var i = 0; i < $scope.usergroups.length; i++) {
-                //socket.join($scope.usergroups[i].name);
-                room = $scope.usergroups[i].name;
-                console.log("#### Joining events channel " + room);
-                socket.emit('room', room);
-            }
-        } else if (purpose && purpose === "leave") {
-            if (arg && arg.length > 0) {
-                console.log("#### Leaving room " + arg);
-                socket.emit('leave', arg);
-            }
+        if (arg && arg === "send") {
+            console.log("##### Connected to server socket!");
+            console.log("#### Sending chat event to  " + email);
+            socket.emit('room', email);
+        } else if (arg && arg === "leave") {
+            console.log("#### Leaving room " + email);
+            socket.emit('leave', email);
         }
-        socket.on('matchingevent', function(data) {
-            console.log("####received matching event: " + JSON.stringify(data));
+        socket.on('chatevent', function(data) {
+            console.log("####received chat event: " + JSON.stringify(data));
             if (!DataService.isValidObject(data) || !DataService.isValidArray(data.entities)) {
                 console.log("#####received matching event but no data!");
                 return;
             } else if (UserService.getLoggedIn().email === data.entities[0].email) {
-                console.log("#####received matching event created by self!");
-                return;
-            } else {
+                console.log("#####received chat event sent to me!");
                 console.log("#####lastUUID for HandleEvent=" + $rootScope.lastUUID + " and entity uuid=" + data.entities[0].uuid);
                 if ($rootScope.lastUUID === data.entities[0].uuid) {
                     console.log("#####Discarding duplicate events");
                 } else {
+                    var msg = {
+                        "sentby": JSON.stringify(data.entities[0].sentby).replace(/\"$/, "").replace(/\"/, ""),
+                        "text": JSON.stringify(data.entities[0].text).replace(/\"$/, "").replace(/\"/, "")
+                    };
+                    console.log("#####received chat event created by someone else! " + JSON.stringify(msg));
+                    $rootScope.chatArray.push(msg);
+                    $rootScope.secondPersonTextArray.push(msg.text);
+                    $rootScope.targetChatuser = JSON.stringify(data.entities[0].sentbyemail).replace(/\"$/, "").replace(/\"/, "");
+                    console.log("chatArray = " + JSON.stringify($rootScope.chatArray));
+                    $scope.$apply();
+                    //$scope.HandleEvent("Chat Message", msg);
                     $rootScope.lastUUID = data.entities[0].uuid;
-                    for (var i = 0; i < $scope.usergroups.length; i++) {
-                        if ($scope.usergroups[i].name === data.entities[0].group_name) {
-                            var msg = JSON.stringify(data.entities[0].items + "@: " +
-                                data.entities[0].address + ". Contact " + data.entities[0].postedby + ": " +
-                                data.entities[0].phone_number + " / " + data.entities[0].email);
-                            console.log("#####received matching event created by others! " + msg);
-                            $scope.HandleEvent("FreeCycle Alert", msg);
-                            break;
-                        }
-
-                    }
                 }
+            } else {
+                console.log("#####Received chat event not meant for me!");
             }
         });
         socket.onclose = function(evt) {
             console.log("##### Received socket onlcose event: " + JSON.stringify(evt));
-            $scope.setupWebSockets('init', null);
+            //$scope.setupWebSockets('init', null);
         };
     }
     $scope.HandleEvent = function(title, text) {
@@ -715,21 +804,26 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
             text: text,
             foreground: true
         });*/
-        console.log("####Handling matching event..." + text);
-        if (!text || text.length < 2) {
+        console.log("####Handling matching event..." + JSON.stringify(text));
+        if (!text || text.length < 1) {
             console.log("No substantial text for notification..aborting");
             return;
         }
         Notification.info({
-            message: text.replace(/\"$/, "").replace(/\"/, ""),
+            //message: text.replace(/\"$/, "").replace(/\"/, ""),
+            message: text.text,
             title: title,
             positionY: 'top',
             positionX: 'center',
             delay: 4000,
             replaceMessage: true
         });
-        console.log("#####Calling GetEvents");
-        $rootScope.$emit("CallGetEventsMethod", {});
+        /*var r = confirm(text.sentby + " wants to chat with you. Do you want to chat now?");
+        if (r == true) {
+            $location.path("/chat");
+        } else {
+            // 
+        }*/
     }
     $scope.CreateNeed = function(need, emergency) {
         $scope.loginResult = "";
@@ -1503,6 +1597,30 @@ app.controller("dealCtrl", function($scope, $rootScope, $http, $filter, $locatio
             }
         );
     };
+    $scope.GetAllUsers = function() {
+        $scope.spinner = true;
+        //first create group with id=<city>-<place>
+        var getURL = BASEURL + "/allusers";
+        getURL = encodeURI(getURL);
+        $http({
+            method: "GET",
+            url: getURL
+        }).then(
+            function successCallback(response) {
+                // this callback will be called asynchronously
+                // when the response is available
+                $scope.spinner = false;
+                $rootScope.allusers = response.data;
+            },
+            function errorCallback(error) {
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+                $scope.spinner = false;
+                $scope.groupusers = "ERROR GETTING GROUP USERS ";
+                $scope.alldeals = false;
+            }
+        );
+    };
     $scope.GetEventsForUser = function(executeInBg) {
 
         if (!executeInBg) {
@@ -2168,9 +2286,7 @@ app.controller("LoginCtrl", function(
     $scope.spinner = false;
     $scope.isCollapsed = true;
     $rootScope.mobileDevice = false;
-    $rootScope.$on("CallSetupWebSocketsMethod", function() {
-        $scope.setupWebSockets("init", null);
-    });
+
     $scope.isVisible = function() {
         //return ("/login" !== $location.path() && "/signup" !== $location.path() && "/resetpw" !== $location.path());
         return true;
@@ -2221,8 +2337,11 @@ app.controller("LoginCtrl", function(
                         $scope.login_phone = obj.phone;
                         $rootScope.username = obj.fullname;
                         $rootScope.loggedIn = true;
-                        $rootScope.$emit("CallGetGroupsForUserMethod", {});
-                        $location.path($rootScope.savedLocation);
+                        //$rootScope.$emit("CallGetGroupsForUserMethod", {});
+                        $rootScope.$emit("CallSetupWebsocketsMethod", {});
+                        $rootScope.$emit("CallGetAllUsersMethod", {});
+                        //$location.path($rootScope.savedLocation);
+                        $location.path("/home");
                         return;
                     }
                 }
@@ -2407,3 +2526,20 @@ app.controller("RegisterCtrl", function($scope, $http, $location, $window, UserS
         $window.history.back();
     }
 });
+app.directive("fixBottom", function() {
+    return {
+        link: function(scope, element, attrs) {
+            var scrollBot = function() {
+                var target = document.getElementById(attrs.fixBottom);
+                target.scrollTop = target.scrollHeight;
+            };
+
+            element[0].addEventListener("submit", scrollBot);
+
+            scope.$on('$destroy', function() {
+                element.removeEventListener("submit", scrollBot);
+            });
+
+        }
+    }
+})

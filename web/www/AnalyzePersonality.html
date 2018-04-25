@@ -1,56 +1,14 @@
 <!DOCTYPE html>
+
 <html>
 
 <head>
-    <meta charset="UTF-8">
-    <title>Freecycle - Contact Us</title>
+    <title>Personality Analyser App</title>
 </head>
 
-<body ng-app="myApp">
-    <div class="container" ng-controller="ChatCtrl">
-        <!--              -->
-        <div id="chat">
-            <form class="form-horizontal" name="myForm" autocomplete="on" novalidate>
-                <center/>
-                <legend>Lets Talk!</legend>
-                <center/>
-                <br>
-                <fieldset class="clearfix:after">
-                    <p>
-                        <label for="sel1">{{ targetChatuserName }}</label>
-                        <button type="button" class="btn btn-info" ng-click="AnalysePersonality()">Analyse Personality of {{ targetChatuserName }}</button>
-                    </p>
-                    <!--<p><span class="fontawesome-user"></span>
-                        <input id="name" name="name" ng-model="chat.name" ng-minlength="2" type="text" placeholder="&#xf007; Name" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.name.$dirty && myForm.name.$invalid">Invalid Name</p>
-                    </p>
+<body font-family=calibri>
+    <div ng-app="myApp" ng-controller="ChatCtrl">
 
-                    <p><span class="fontawesome-envelope"></span>
-                        <input id="email" name="email" ng-model="chat.email" ng-minlength="2" type="email" placeholder="&#xf0e0; EMail" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.email.$dirty && myForm.email.$invalid">Invalid Email</p>
-                    </p>-->
-                    <br>
-                    <table>
-                        <tr ng-repeat="x in chatArray track by $index">
-                            <td>{{ x.sentby + ' :' }}</td>
-                            <td>{{ x.text }}</td>
-                        </tr>
-                    </table>
-
-                    <p>
-                        <input id="items" name="text" ng-model="chat.text" ng-minlength="2" type="text" autocomplete="off" placeholder="&#xf086; Chat Text" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.items.$dirty && myForm.items.$invalid">Please Enter Text</p>
-                    </p>
-                    <p>
-                        <input type="button" name="submit" class="btn btn-success btn-xl" value="SUBMIT" ng-click="SendChat(chat); spinner = true;" ng-disabled="myForm.name.$invalid||  myForm.email.$invalid ||  myForm.phone.$invalid || 
-                                          myForm.city.$invalid ||  myForm.subject.$invalid ||  myForm.text.$invalid">
-                        <br>
-                        <center/> {{result}}
-                    </p>
-                    <center/><i ng-show="spinner " class="fa fa-circle-o-notch fa-spin "></i>
-                </fieldset>
-            </form>
-        </div>
 
         <div align=center ng-show="loading ">
             <i class="fa fa-refresh fa-spin fa-3x fa-fw "></i>
@@ -61,10 +19,10 @@
             <p>{{response.data.word_count_message}}</p><br>
             <div ng-hide="LOL" class="container">
                 <div class="btn-group">
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;">Personality</a>
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;">Values</a>
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;">Needs</a>
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;">Consumption</a>
+                    <a href="#" class="btn btn-success" ng-click="showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;">Personality</a>
+                    <a href="#" class="btn btn-success" ng-click="showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;">Values</a>
+                    <a href="#" class="btn btn-success" ng-click="showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;">Needs</a>
+                    <a href="#" class="btn btn-success" ng-click="showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;">Consumption</a>
                 </div>
             </div>
             <br>
@@ -142,9 +100,7 @@
                 </table>
             </div>
         </div>
-
     </div>
-
 </body>
 
 </html>

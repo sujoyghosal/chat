@@ -3,55 +3,74 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Chat App</title>
+    <title>Freecycle - Contact Us</title>
 </head>
 
 <body ng-app="myApp">
     <div class="container">
+        <!--              -->
         <div id="login">
-            <form class="form-horizontal" ng-controller="DonationCtrl" name="myForm" autocomplete="on" novalidate>
+            <form class="form-horizontal" ng-controller="ChatCtrl" name="myForm" autocomplete="on" novalidate>
                 <center/>
-                <legend>AI based chat application</legend>
+                <legend>Lets Talk!</legend>
                 <center/>
                 <br>
                 <fieldset class="clearfix:after">
-                    <p><span class="fontawesome-user"></span>
-                        <input id="name" name="name" ng-model="chat.name" ng-minlength="2" type="text" placeholder="&#xf007; {{login_fullname}}" class="form-control input-md" ng-readonly="true">
-                        <p class="isa_error" ng-show="myForm.name.$dirty && myForm.name.$invalid">Invalid Name</p>
-                    </p>
-                    <!-- JS because of IE support; better: placeholder="Username" -->
-                    <p><span class="fontawesome-envelope"></span>
-                        <input id="email" name="email" ng-model="chat.email" ng-minlength="2" type="email" placeholder="&#xf0e0; {{login_email}}" class="form-control input-md" ng-readonly="true">
-                        <p class="isa_error" ng-show="myForm.email.$dirty && myForm.email.$invalid">Invalid Email</p>
-
-                    </p>
-                    <!-- JS because of IE support; better: placeholder="Username" -->
-                    <p><span class="fontawesome-phone"></span>
-                        <input id="phone" name="phone" ng-model="chat.phone" ng-minlength="10" type="tel" placeholder="&#xf10b; Phone" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.phone.$dirty && myForm.phone.$invalid">Invalid Phone</p>
-
-                    </p>
-                    <!-- JS because of IE support; better: placeholder="Username" -->
                     <p>
-                        <input id="city" name="city" ng-model="chat.city" ng-minlength="2" type="text" placeholder="&#xf239; City " class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.city.$dirty && myForm.city.$invalid">Please Enter City</p>
+                        <label for="sel1">Select Friend:</label>
+                        <select class="form-control" id="targetuser" name="targetuser" selected="{{ targetChatuserName }}" ng-change="StartChat(chat)" ng-model="chat.targetuser" style="width:200px">  
+                            <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in allusers">{{ x.fullname }}</option>
+                        </select>
+                        <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="AnalysePersonality()">Analyse Personality of {{ targetChatuserName }}</button>
                     </p>
+                    <br>
+                    <div>
+                        <form class="form-horizontal" name="myForm" autocomplete="on" fix-bottom="chat" novalidate>
+                            <fieldset class="clearfix:after">
 
-                    <p>
-                        <input id="items" name="items" ng-model="chat.text" ng-minlength="2" type="text" autocomplete="off" placeholder="&#xf1b3; Type text" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.items.$dirty && myForm.items.$invalid">Chat Text</p>
-                    </p>
-                    <p>
-                        <input type="button" name="submit" class="btn btn-success btn-xl" value="SUBMIT" ng-click="SendChat(chat); spinner = true;" ng-disabled="myForm.name.$invalid||  myForm.email.$invalid ||  myForm.phone.$invalid || 
-                                          myForm.city.$invalid ||  myForm.from.$invalid ||  myForm.to.$invalid">
-                        <br>
-                        <center/> {{loginResult}}
-                    </p>
-                    <center/><i ng-show="spinner " class="fa fa-circle-o-notch fa-spin "></i>
+                                <div id="chat" style="height:150px; overflow-y:scroll">
+                                    <table class="table">
+                                        <tbody>
+                                            <tr ng-repeat="msg in chatArray track by $index">
+                                                <td><strong>{{ msg.sentby}} : </strong>
+
+                                                </td>
+                                                <td>{{msg.text}}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p>
+                                    <input type="text" ng-model="chat.text" class="form-control" placeholder="Enter a Message "> </p>
+                                <p>
+                                    <button class="btn btn-primary btn-s" type="submit" ng-click="SendChat(chat)" ng-hide="false">Submit</button>
+                                    <button class="btn btn-primary btn-s" type="reset" ng-click="chatArray = null;" ng-hide="false">Clear Chat</button>
+                                    <br>
+                                    <center/> {{result}}
+                                </p>
+                                <center/><i ng-show="spinner " class="fa fa-circle-o-notch fa-spin "></i>
+                            </fieldset>
+                        </form>
+                        <!--<form fix-bottom="chat" ng-submit="SendChat(chat)">
+                            <div id="chat" style="height:150px; overflow-y:scroll">
+                                <table class="table">
+                                    <tbody>
+                                        <tr ng-repeat="msg in chatArray track by $index">
+                                            <td><strong>{{ msg.sentby }} : </strong>
+
+                                            </td>
+                                            <td>{{msg.text}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <input type="text" ng-model="chat.text" class="form-control" placeholder="Enter a Message ">
+                            <button class="btn btn-primary btn-s" ng-click="SendChat(chat)" type="submit" ng-hide="false">Submit</button>
+                        </form>-->
+                    </div>
                 </fieldset>
             </form>
         </div>
-        <!-- end login -->
     </div>
 </body>
 
