@@ -720,7 +720,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     };
 
     $scope.AnalysePersonality = function(text) {
-        //  alert($scope.address);
+        $scope.loading = true;
         console.log("Analysing personality text: " + text);
         if (!text || text.length < 100) {
             $scope.LOL = true;
