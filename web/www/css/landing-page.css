@@ -292,3 +292,11 @@ div.ex1 {
     border: 2px solid #73AD21;
     padding: 5px;
 }
+
+.dot {
+    height: 25px;
+    width: 25px;
+    background-color: #9f0;
+    border-radius: 50%;
+    display: inline-block;
+}

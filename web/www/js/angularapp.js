@@ -348,6 +348,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         $scope.setupWebSockets(UserService.getLoggedIn().email, 'newlogin');
     });
     $rootScope.$on("Logout", function() {
+        console.log("####Sending logout event to server for broadcasting....");
         $scope.setupWebSockets(UserService.getLoggedIn().email, 'logout');
         $scope.login_email = "";
         UserService.setLoggedIn({});
@@ -614,10 +615,11 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     };
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
-        var msg = {
-            "sentby": $rootScope.username,
-            "text": chat.text
-        };
+        if (!chat && !DataService.isUnDefined(chat.text))
+            var msg = {
+                "sentby": $rootScope.username,
+                "text": chat.text
+            };
         $rootScope.chatArray.push(msg);
 
         $scope.setupWebSockets($rootScope.targetChatuser, 'send');
@@ -656,9 +658,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.StartTimer = function() {
         $scope.timeout = $timeout(function() {
             console.log("####Timeout Event occured! Logging out....");
-            $scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
-            $rootScope.$emit("SendLogoutEvent", {});
-        }, 300000);
+            //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
+            $rootScope.$emit("Logout", {});
+        }, 600000);
 
     }
     $scope.StopTimer = function() {

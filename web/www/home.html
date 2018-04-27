@@ -18,6 +18,13 @@
                 <fieldset class="clearfix:after">
                     <p>
                         <label for="sel1">Online Now:</label>
+                        <!--<ul style="list-style-type:none">
+                            <li ng-vlue="{{ x.email }}" ng-repeat="x in onlineUsers">
+                                <div style="text-align:center">
+                                    <span class="dot"></span> {{ x.fullname }}
+                                </div>
+                            </li>
+                        </ul>-->
                         <select class="form-control" id="targetuser" name="targetuser" ng-change="StartChat(chat)" ng-model="chat.targetuser" style="width:200px">
                             <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in onlineUsers">{{ x.fullname }}</option>
                         </select>
@@ -33,10 +40,7 @@
                                     <table class="table">
                                         <tbody>
                                             <tr ng-repeat="msg in chatArray track by $index">
-                                                <td><strong>{{ msg.sentby}} : </strong>
-
-                                                </td>
-                                                <td>{{msg.text}}</td>
+                                                <td><strong>{{ msg.sentby }} </strong>: {{ ' ' + msg.text }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
