@@ -95,6 +95,7 @@ var ug = new usergrid.client({
     logging: true
 });
 var loggedIn = null;
+var onlineUsers = [];
 // The API starts here
 // GET /
 var rootTemplate = {
@@ -141,6 +142,10 @@ function getallDeals(req, res) {
         res.jsonp(allDeals);
     });
 }
+app.get("/onlineusers", function(req, resp) {
+    //    resp.jsonp(rootTemplate);
+    resp.jsonp(onlineUsers);
+});
 var Deals_query = "";
 app.get("/getDeals", function(req, res) {
     var paramname = req.param("paramname");
@@ -1652,13 +1657,84 @@ http.listen(PORT, function() {
 });
 io.on('connection', function(socket) {
     mysocket = socket;
-    socket.on('room', function(room) {
-        console.log("####Conecting client socket to room " + room);
-        socket.join(room);
+    socket.on('room', function(loggedinUser) { //login
+        if (!loggedinUser || loggedinUser == undefined) {
+            console.log("####Ignoring null or undefined login time join request");
+            return;
+        }
+        console.log("####Conecting client socket to room " + loggedinUser.email);
+        socket.join(loggedinUser.email);
+        var online = false;
+        if (onlineUsers && onlineUsers.length > 0) {
+            for (i = 0; i < onlineUsers.length; i++) {
+                if (onlineUsers[i].email === loggedinUser.email) {
+                    online = true;
+                    break;
+                }
+            }
+        }
+        if (!online) {
+            onlineUsers.push(loggedinUser);
+            console.log("#### Online now - " + JSON.stringify(loggedinUser));
+            io.emit('activeuserschanged', loggedinUser.email);
+        }
+    });
+    socket.on('join', function(targetUser) { //login
+        if (!targetUser || targetUser == undefined) {
+            console.log("####Ignoring null or undefined join request");
+            return;
+        }
+        if (onlineUsers && onlineUsers.length > 0) {
+            var online = false;
+            for (i = 0; i < onlineUsers.length; i++) {
+                if (onlineUsers[i].email === targetUser.email) {
+                    online = true;
+                    break;
+                }
+            }
+            if (!online) {
+                console.log("####Cannot join room " + targetUser.email + ", seems offline");
+                socket.emit('offline', targetUser.email);
+            } else {
+                console.log("####Joining room " + targetUser.email);
+                socket.join(targetUser.email);
+            }
+        }
+
     });
     socket.on('leave', function(room) {
+        if (!room || room == undefined) {
+            console.log("####Ignoring null or undefined leave request");
+            return;
+        }
         console.log("####Disconecting client socket from room " + room);
         socket.leave(room);
+        if (onlineUsers && onlineUsers.length > 0) {
+            for (i = 0; i < onlineUsers.length; i++) {
+                if (onlineUsers[i].email === room) {
+                    onlineUsers.splice(i, 1);
+                    console.log("Removed user " + room + "from online list");
+                }
+            }
+        }
     });
-    console.log('a user connected');
+    socket.on('logout', function(email) {
+        if (!email || email == undefined) {
+            console.log("####Ignoring null or undefined logout request");
+            return;
+        }
+        console.log("#### Online USers: " + JSON.stringify(onlineUsers));
+        console.log("####Received logout event for  " + email);
+        if (onlineUsers && onlineUsers.length > 0) {
+            for (i = 0; i < onlineUsers.length; i++) {
+                if (onlineUsers[i].email === email) {
+                    onlineUsers.splice(i, 1);
+                    console.log("Removed user " + email + " from online list");
+                }
+            }
+        }
+        console.log("#### Broadcasting logout event for " + email + " for all users to update active user states");
+        console.log("#### Online USers after delete: " + JSON.stringify(onlineUsers));
+        io.emit('activeuserschanged', email);
+    });
 });
