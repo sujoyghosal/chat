@@ -304,6 +304,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.errorMsg = '';
     $scope.sampleText = "Your literature review should be appropriate to the kind of paper you are writing. If it is a thesis, you should strive for completeness, both in reviewing all the relevant literature and in making the main arguments clear to a reader who is unfamiliar with that literature. For a course paper or journal article, it is sufficient to review the main papers that are directly relevant. Again, you should assume that your reader has not read them, but you need not go into detail. You should review only those points that are relevant to the arguments you will make. Do not say that ``X found Y'' or ``demonstrated'' if X's conclusions don't follow from X's results. You can use words like ``X claimed to show that Y'' or ``suggested that'' when you are not sure. If you see a flaw, you can add, ``However ...''. Try to avoid expressions like ``Unfortunately, Smith and Jones neglected to examine [precisely what you are examining].'' It might have been unfortunate for them or for the field, but it is fortunate for you, and everyone knows it.";
     $scope.events = [];
+    $scope.timeout = null;
     //$rootScope.allusers = [];
     $rootScope.secondPersonTextArray = [];
     var today = new Date().toISOString().slice(0, 10);
@@ -333,6 +334,29 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     });
     $rootScope.$on("CallGetAllUsersMethod", function() {
         $scope.GetAllUsers();
+    });
+    $rootScope.$on("CallGetOnlineUsersMethod", function() {
+        $scope.GetOnlineUsers();
+    });
+    $rootScope.$on("CallStartTimerMethod", function() {
+        $scope.StartTimer();
+    });
+    $scope.$on("StopTimer", function() {
+        $scope.StopTimer();
+    });
+    $scope.$on("NewLogin", function() {
+        $scope.setupWebSockets(UserService.getLoggedIn().email, 'newlogin');
+    });
+    $rootScope.$on("Logout", function() {
+        $scope.setupWebSockets(UserService.getLoggedIn().email, 'logout');
+        $scope.login_email = "";
+        UserService.setLoggedIn({});
+        UserService.setLoggedInStatus(false);
+        $rootScope.loggedIn = false;
+        $scope.eventsCount = 0;
+        console.log("Logout: Set logged in status = " + UserService.getLoggedInStatus());
+        $location.path("/login");
+        return;
     });
     $rootScope.$on('$routeChangeStart', function(event, next) {
 
@@ -550,7 +574,43 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         //alert(chat.targetuser);
         $rootScope.targetChatuser = chat.targetuser;
         var user = $scope.GetUserFromEmail(chat.targetuser);
-        $rootScope.targetChatuserName = user.fullname;
+    };
+    $scope.GetOnlineUsers = function() {
+        $scope.loginResult = "";
+
+        var getURL = BASEURL + "/onlineusers";
+
+        getURL = encodeURI(getURL);
+        $http({
+            method: "GET",
+            url: encodeURI(getURL)
+        }).then(
+            function successCallback(response) {
+                // this callback will be called asynchronously
+                // when the response is available
+                $scope.loginResult = "Success";
+                if (DataService.isValidObject(response) && DataService.isValidArray(response.data)) {
+                    $rootScope.onlineUsers = response.data;
+                    /*for (i = 0; i < $rootScope.onlineUsers.length; i++) {
+                        if ($rootScope.onlineUsers[i].email === UserService.getLoggedIn().email ||
+                            DataService.isUnDefined($rootScope.onlineUsers[i].email)) {
+                            $rootScope.onlineUsers.splice(i);
+                            console.log("Removed user " + i + "from online list");
+                        }
+                    }*/
+                    console.log("##### online users detected: " + JSON.stringify($rootScope.onlineUsers));
+                } else
+                    console.log("#####No online users detected");
+            },
+            function errorCallback(error) {
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+                $scope.loginResult = "Error Received from Server.." + error.toString();
+                Notification.error({ message: "Error processing this request. Please try again later!", positionY: 'bottom', positionX: 'center' });
+                $scope.spinner = false;
+                $scope.status = error.statusText;
+            }
+        );
     };
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
@@ -580,6 +640,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 //Notification.success({ message: "Good job! Successufully Published Your Chat text. Thank You!", positionY: 'bottom', positionX: 'center' });
                 $scope.spinner = false;
                 $scope.status = "response.statusText";
+                $scope.$emit("StopTimer", {});
                 //schedulePush(new Date());
             },
             function errorCallback(error) {
@@ -592,16 +653,26 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             }
         );
     };
-    $scope.GetUserFromEmail = function(email) {
-        var user = {};
-        for (i = 0; i < $rootScope.allusers.length; i++) {
-            if ($rootScope.allusers[i].email === email) {
-                user = $rootScope.allusers[i];
-                break;
-            }
-        }
-        return user;
-    };
+    $scope.StartTimer = function() {
+        $scope.timeout = $timeout(function() {
+            console.log("####Timeout Event occured! Logging out....");
+            $scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
+            $rootScope.$emit("SendLogoutEvent", {});
+        }, 300000);
+
+    }
+    $scope.StopTimer = function() {
+        console.log("####Cancelling timer");
+        if (!DataService.isUnDefined($scope.timeout))
+            $timeout.cancel($scope.timeout);
+        else
+            console.log("#### Could not stop timer");
+    }
+    $scope.ResetTimer = function() {
+        $scope.StopTimer();
+        $scope.StartTimer();
+    }
+
     $scope.SendOffer = function(offer) {
         $scope.loginResult = "";
         var now = new Date();
@@ -749,25 +820,29 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.setupWebSockets = function(email, arg) {
         console.log("#####Setting up listener for alerts");
         socket = io.connect(BASEURL);
+        var targetUser = {
+            "fullname": $rootScope.targetChatuserName,
+            "email": email
+        }
+        var loggedinUser = {
+            "fullname": UserService.getLoggedIn().fullname,
+            "email": UserService.getLoggedIn().email
+        }
         socket.on('connect', function() {
             console.log("##### Connected to server socket!");
-            console.log("#### Joining events channel " + UserService.getLoggedIn().email);
-            socket.emit('room', UserService.getLoggedIn().email);
-            /*for (var i = 0; i < $scope.usergroups.length; i++) {
-                //socket.join($scope.usergroups[i].name);
-                room = $scope.usergroups[i].name;
-                console.log("#### Joining events channel " + room);
-                socket.emit('room', email);
-                console.log("Test message");
-            }*/
+            console.log("#### Joining events channel " + loggedinUser.email);
+            socket.emit('room', loggedinUser);
         });
         if (arg && arg === "send") {
             console.log("##### Connected to server socket!");
             console.log("#### Sending chat event to  " + email);
-            socket.emit('room', email);
+            socket.emit('join', targetUser);
         } else if (arg && arg === "leave") {
             console.log("#### Leaving room " + email);
             socket.emit('leave', email);
+        } else if (arg && arg === "logout") {
+            console.log("#### Logging out " + email);
+            socket.emit('logout', email);
         }
         socket.on('chatevent', function(data) {
             console.log("####received chat event: " + JSON.stringify(data));
@@ -796,6 +871,18 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             } else {
                 console.log("#####Received chat event not meant for me!");
             }
+        });
+        socket.on('activeuserschanged', function(data) {
+            console.log("##### Received activeuserschanged event with user: " + JSON.stringify(data));
+            /*Notification.info({
+                message: JSON.stringify(data) + " has logged out!",
+                title: "Alert",
+                positionY: 'top',
+                positionX: 'center',
+                delay: 4000,
+                replaceMessage: true
+            });*/
+            $rootScope.$emit("CallGetOnlineUsersMethod", {});
         });
         socket.onclose = function(evt) {
             console.log("##### Received socket onlcose event: " + JSON.stringify(evt));
@@ -828,6 +915,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         } else {
             // 
         }*/
+    }
+    $scope.HandleLogout = function() {
+        $rootScope.$emit("Logout", {});
     }
     $scope.CreateNeed = function(need, emergency) {
         $scope.loginResult = "";
@@ -1619,6 +1709,10 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 // when the response is available
                 $scope.spinner = false;
                 $rootScope.allusers = response.data;
+                if (DataService.isValidArray($rootScope.allusers)) {
+                    $rootScope.allusers.splice($rootScope.allusers.length - 1, 1);
+                }
+                //console.log("####All Users: " + JSON.stringify($rootScope.allusers));
             },
             function errorCallback(error) {
                 // called asynchronously if an error occurs
@@ -1880,6 +1974,40 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             }
         );
     }
+    $scope.GetUserFromEmail = function(email) {
+        if (!email) {
+            Notification.error({ message: "Email Not Found!", positionY: 'bottom', positionX: 'center' });
+            $scope.found = "ERROR - Email NOT FOUND";
+            return;
+        }
+        $scope.spinner = true;
+        //first create group with id=<city>-<place>
+        var getURL = BASEURL + "/getuser?email=" + email.trim();
+        getURL = encodeURI(getURL);
+        $http({
+            method: "GET",
+            url: getURL
+        }).then(
+            function successCallback(response) {
+                // this callback will be called asynchronously
+                // when the response is available
+                $scope.spinner = false;
+                if (!DataService.isUnDefined(response.data) && DataService.isValidArray(response.data) &&
+                    response.data.length > 0) {
+                    console.log("#### GetUserFromEmail Response: " + JSON.stringify(response.data));
+                    $rootScope.targetChatuserName = response.data[0].fullname;
+                    return response.data[0];
+                }
+
+            },
+            function errorCallback(error) {
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+                $scope.spinner = false;
+                $scope.passengers = "ERROR GETTING PASSENGERS ";
+            }
+        );
+    };
     $scope.NotifyDonor = function(email, text) {
         if (!email) {
             Notification.error({ message: "Email Not Found!", positionY: 'bottom', positionX: 'center' });
@@ -2270,16 +2398,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 }
             );
     };
-    $scope.Logout = function() {
-        $scope.login_email = "";
-        UserService.setLoggedIn({});
-        UserService.setLoggedInStatus(false);
-        $rootScope.loggedIn = false;
-        $scope.eventsCount = 0;
-        $location.path("/home");
-        console.log("Logout: Set logged in status = " + UserService.getLoggedInStatus());
-        return;
-    };
+
 });
 app.controller("LoginCtrl", function(
     $scope,
@@ -2347,8 +2466,11 @@ app.controller("LoginCtrl", function(
                         $rootScope.loggedIn = true;
                         //$rootScope.$emit("CallGetGroupsForUserMethod", {});
                         $rootScope.$emit("CallSetupWebsocketsMethod", {});
-                        $rootScope.$emit("CallGetAllUsersMethod", {});
+                        $rootScope.$emit("CallGetOnlineUsersMethod", {});
+                        $rootScope.$emit("CallStartTimerMethod", {});
+                        $rootScope.$emit("NewLogin", {});
                         //$location.path($rootScope.savedLocation);
+
                         $location.path("/home");
                         return;
                     }
@@ -2364,16 +2486,6 @@ app.controller("LoginCtrl", function(
                 //      $scope.login_email = '';
             }
         );
-    };
-    $scope.Logout = function() {
-        $scope.login_email = "";
-        UserService.setLoggedIn({});
-        UserService.setLoggedInStatus(false);
-        $rootScope.loggedIn = false;
-        $scope.eventsCount = 0;
-        $location.path("/home");
-        console.log("Logout: Set logged in status = " + UserService.getLoggedInStatus());
-        return;
     };
 });
 app.controller("RegisterCtrl", function($scope, $http, $location, $window, UserService, DataService, Notification) {
