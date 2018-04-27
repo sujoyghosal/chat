@@ -591,7 +591,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 // when the response is available
                 $scope.loginResult = "Success";
                 if (DataService.isValidObject(response) && DataService.isValidArray(response.data)) {
-                    $rootScope.onlineUsers = response.data;
+                    $rootScope.onlineUsers = response.data.filter(value => Object.keys(value).length !== 0);
                     /*for (i = 0; i < $rootScope.onlineUsers.length; i++) {
                         if ($rootScope.onlineUsers[i].email === UserService.getLoggedIn().email ||
                             DataService.isUnDefined($rootScope.onlineUsers[i].email)) {
@@ -599,6 +599,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                             console.log("Removed user " + i + "from online list");
                         }
                     }*/
+                    //$scope.chat.targetuser = rootScope.onlineUsers[0];
                     console.log("##### online users detected: " + JSON.stringify($rootScope.onlineUsers));
                 } else
                     console.log("#####No online users detected");

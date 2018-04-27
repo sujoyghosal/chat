@@ -24,10 +24,13 @@
                                     <span class="dot"></span> {{ x.fullname }}
                                 </div>
                             </li>
-                        </ul>-->
-                        <select class="form-control" id="targetuser" name="targetuser" ng-change="StartChat(chat)" ng-model="chat.targetuser" style="width:200px">
+                        </ul>
+                        <select class="form-control" id="targetuser" name="targetuser" ng-change="StartChat(chat)" ng-model="chat.targetuser">                            
                             <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in onlineUsers">{{ x.fullname }}</option>
+                        </select>-->
+                        <select class="form-control" id="targetuser" name="targetuser" ng-model="chat.targetuser" ng-options="x.value as x.fullname for x in onlineUsers" style="width:200px">
                         </select>
+
                         <!--                       <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="location = '/personality';personality.text = secondPersonTextArray.toString();">Analyse Personality of {{ targetChatuserName }}</button>-->
                         <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="OpenPersonalityPage()">Analyse Personality of {{ targetChatuserName }}</button>
                     </p>
