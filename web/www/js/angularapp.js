@@ -614,8 +614,22 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             }
         );
     };
+
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
+        var targetUSerOffline = true;
+        for (i = 0; i < $rootScope.onlineUsers.length; i++) {
+            var auser = $rootScope.onlineUsers[i];
+            if ($rootScope.targetChatuser === auser.email) {
+                var targetUSerOffline = false;
+                break;
+            }
+        }
+        if (targetUSerOffline) {
+            console.log("####SendChat -> target user seems offline");
+            Notification.error({ message: "The user seems offline now.", positionY: 'bottom', positionX: 'center' });
+            return;
+        }
         var msg = {
             "sentby": $rootScope.username,
             "text": chat.text
@@ -664,11 +678,11 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
 
     }
     $scope.StopTimer = function() {
-        console.log("####Cancelling timer");
-        if (!DataService.isUnDefined($scope.timeout))
-            $timeout.cancel($scope.timeout);
-        else
-            console.log("#### Could not stop timer");
+        console.log("####Cancelling timer: " + JSON.stringify($scope.timeout));
+        //if (!DataService.isUnDefined($scope.timeout))
+        $timeout.cancel($scope.timeout);
+        //else
+        console.log("#### Stopped timer: " + JSON.stringify($scope.timeout));
     }
     $scope.ResetTimer = function() {
         $scope.StopTimer();
@@ -837,7 +851,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         });
         if (arg && arg === "send") {
             console.log("##### Connected to server socket!");
-            console.log("#### Sending chat event to  " + email);
+            console.log("#### Sending chat event to  " + JSON.stringify(targetUser));
             socket.emit('join', targetUser);
         } else if (arg && arg === "leave") {
             console.log("#### Leaving room " + email);
