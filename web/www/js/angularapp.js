@@ -260,7 +260,7 @@ var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
 //var BASEURL_PERSONAL = "http://localhost:9000";
 var BASEURL = BASEURL_PERSONAL;
-var GUIURL = 'http://localhost:3000';
+var GUIURL = 'https://chatwebsujoy.mybluemix.net';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
@@ -684,7 +684,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             console.log("####Timeout Event occured! Logging out....");
             //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
             $rootScope.$emit("Logout", {});
-        }, 600000);
+        }, 20000);
 
     }
     $scope.StopTimer = function() {
@@ -851,9 +851,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID,
                 firebase.auth.FacebookAuthProvider.PROVIDER_ID,
                 firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-                firebase.auth.GithubAuthProvider.PROVIDER_ID,
+                //    firebase.auth.GithubAuthProvider.PROVIDER_ID,
                 firebase.auth.EmailAuthProvider.PROVIDER_ID,
-                firebase.auth.PhoneAuthProvider.PROVIDER_ID
+                //    firebase.auth.PhoneAuthProvider.PROVIDER_ID
             ],
             credentialHelper: firebaseui.auth.CredentialHelper.ACCOUNT_CHOOSER_COM,
             // Terms of service url.
@@ -889,7 +889,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     $rootScope.loggedIn = true;
                     $scope.GetUserByEmail(user.email, 'login');
                     user.getIdToken().then(function(accessToken) {
-                        document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
+                        //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
                         /*document.getElementById('sign-in').textContent = 'Sign out';
                         document.getElementById('account-details').textContent = JSON.stringify({
                             displayName: displayName,
@@ -902,6 +902,10 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                             providerData: providerData
                         }, null, '  ');*/
                     });
+                    $rootScope.$emit("CallSetupWebsocketsMethod", {});
+                    $rootScope.$emit("CallGetOnlineUsersMethod", {});
+                    $rootScope.$emit("CallStartTimerMethod", {});
+                    $rootScope.$emit("NewLogin", {});
                 } else {
                     // User is signed out.
                     /*document.getElementById('sign-in-status').textContent = 'Signed out';
