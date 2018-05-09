@@ -18,13 +18,22 @@
                 <fieldset class="clearfix:after">
                     <p>
                         <label for="sel1">Online Now:</label>
-                        <!--<ul style="list-style-type:none">
-                            <li ng-vlue="{{ x.email }}" ng-repeat="x in onlineUsers">
-                                <div style="text-align:center">
-                                    <span class="dot"></span> {{ x.fullname }}
+                        <!--<div class="card-deck bg-success" ng-repeat="x in onlineUsers">
+                            <div class="card" style="width:90px">
+                                <img class="card-img-top" src="{{x.photoURL}}" alt="Card image">
+                                <div class="card-body">
+                                    <h4 class="card-title">{{x.fullname}}</h4>
+                                    <a href="#" class="btn btn-primary">See Profile</a>
                                 </div>
-                            </li>
-                        </ul>-->
+                            </div>
+                        </div>
+                        <div class="container">
+                            <div class="btn-group-vertical">
+                                <button type="button" ng-click="chat.targetuser=x.email; StartChat(chat)" ng-repeat="x in onlineUsers" class="btn btn-primary">{{x.fullname}}
+                                    <img class="card-img-top" src="{{x.photoURL}}" alt="Card image" style="width:40%">
+                                </button>
+                            </div>
+                        </div>-->
                         <select class="form-control" id="targetuser" name="targetuser" ng-change="StartChat(chat)" ng-model="chat.targetuser">                            
                             <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in onlineUsers">{{ x.fullname }}</option>
                         </select>

@@ -260,7 +260,8 @@ var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
 //var BASEURL_PERSONAL = "http://localhost:9000";
 var BASEURL = BASEURL_PERSONAL;
-var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+//var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
@@ -366,7 +367,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             console.error("##### Problem logging user out " + JSON.stringify(error));
         });
         console.log("Logout: Set logged in status = " + UserService.getLoggedInStatus());
-        $location.path("/login");
+        $location.path("/home");
+        return;
+    });
+    $rootScope.$on("alive", function() {
+        console.log("####Sending logout event to server for broadcasting....");
+        $scope.setupWebSockets(UserService.getLoggedIn().email, 'alive');
         return;
     });
     $rootScope.$on('$routeChangeStart', function(event, next) {
@@ -681,10 +687,10 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     };
     $scope.StartTimer = function() {
         $scope.timeout = $timeout(function() {
-            console.log("####Timeout Event occured! Logging out....");
+            console.log("####Sending heartbeat event to server....");
             //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
-            $rootScope.$emit("Logout", {});
-        }, 20000);
+            $rootScope.$emit("alive", {});
+        }, 60000);
 
     }
     $scope.StopTimer = function() {
@@ -985,7 +991,8 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         }
         var loggedinUser = {
             "fullname": UserService.getLoggedIn().fullname,
-            "email": UserService.getLoggedIn().email
+            "email": UserService.getLoggedIn().email,
+            "photoURL": UserService.getLoggedIn().photoURL
         }
         socket.on('connect', function() {
             console.log("##### Connected to server socket!");
@@ -1002,6 +1009,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         } else if (arg && arg === "logout") {
             console.log("#### Logging out " + email);
             socket.emit('logout', email);
+        } else if (arg && arg === "alive") {
+            console.log("#### Logging out " + email);
+            socket.emit('alive', loggedinUser);
         }
         socket.on('chatevent', function(data) {
             console.log("####received chat event: " + JSON.stringify(data));
