@@ -37,7 +37,7 @@
                             <th>{{resp.name}}</th>
                             <th vertical-align="middle">
                                 <div ng-init="percent=resp.percentile*100 " class="outer">
-                                    <div class="inner" ng-style="{ width: percent + '%' } "></div>
+                                    <div class="inner" ng-style="{ width: percent + '%' } ">{{resp.percentile | number:2}}</div>
                                 </div>
                             </th>
                             <th>{{resp.percentile | number:2}}</th>

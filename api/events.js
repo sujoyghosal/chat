@@ -1345,6 +1345,31 @@ app.post("/createuser", function(req, res) {
     }
 });
 
+app.post("/createuserwithoauth", function(req, res) {
+
+    var options = {
+        method: "POST",
+        endpoint: "users",
+        body: {
+            username: req.body.email,
+            name: req.body.email,
+            email: req.body.email,
+            photoURL: req.body.photoURL,
+            fullname: req.body.fullname,
+            phone: req.body.phone,
+            emailVerified: req.body.emailVerified
+        }
+    };
+    console.log("#### Create User Object Is: " + JSON.stringify(options));
+    if (loggedIn === null) {
+        logIn(req, res, function() {
+            createUser(options, req, res);
+        });
+    } else {
+        createUser(options, req, res);
+    }
+});
+
 function createUser(e, req, res) {
     loggedIn.request(e, function(err, data) {
         if (err) {
@@ -1683,6 +1708,8 @@ io.on('connection', function(socket) {
         if (!targetUser || targetUser == undefined) {
             console.log("####Ignoring null or undefined join request");
             return;
+        } else {
+            console.log("####Checking if target user " + JSON.stringify(targetUser) + " is online.")
         }
         if (onlineUsers && onlineUsers.length > 0) {
             var online = false;

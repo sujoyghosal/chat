@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Freecycle - Contact Us</title>
+</head>
+
+<body ng-app="myApp">
+    <div class="container">
+        <!--              -->
+        <div id="login">
+            <form class="form-horizontal" ng-controller="ChatCtrl" name="myForm" autocomplete="on" novalidate>
+                <center/>
+                <legend>Lets Talk!</legend>
+                <center/>
+                <br>
+                <fieldset class="clearfix:after">
+                    <p>
+                        <label for="sel1">Online Now:</label>
+                        <!--<ul style="list-style-type:none">
+                            <li ng-vlue="{{ x.email }}" ng-repeat="x in onlineUsers">
+                                <div style="text-align:center">
+                                    <span class="dot"></span> {{ x.fullname }}
+                                </div>
+                            </li>
+                        </ul>-->
+                        <select class="form-control" id="targetuser" name="targetuser" ng-change="StartChat(chat)" ng-model="chat.targetuser">                            
+                            <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in onlineUsers">{{ x.fullname }}</option>
+                        </select>
+                        <!--<select class="form-control" id="targetuser" name="targetuser" ng-init="StartChat(chat)" ng-model="chat.targetuser" ng-options="x.value as x.fullname for x in onlineUsers" style="width:200px">
+                        </select>-->
+
+                        <!--                       <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="location = '/personality';personality.text = secondPersonTextArray.toString();">Analyse Personality of {{ targetChatuserName }}</button>-->
+                        <button type="button" ng-disabled="targetChatuserName == null || targetChatuserName.length < 1" class="btn btn-info" ng-click="OpenPersonalityPage()">Analyse Personality of {{ targetChatuserName }}</button>
+                    </p>
+                    <br>
+                    <div>
+                        <form class="form-horizontal" name="myForm" autocomplete="on" fix-bottom="chat" novalidate>
+                            <fieldset class="clearfix:after">
+
+                                <div id="chat" style="height:150px; overflow-y:scroll">
+                                    <table class="table">
+                                        <tbody>
+                                            <tr ng-repeat="msg in chatArray track by $index">
+                                                <td><strong>{{ msg.sentby }} </strong>: {{ ' ' + msg.text }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p>
+                                    <input type="text" ng-model="chat.text" class="form-control" placeholder="Enter a Message "> </p>
+                                <p>
+                                    <button class="btn btn-primary btn-s" type="submit" ng-click="SendChat(chat)" ng-hide="false">Submit</button>
+                                    <button class="btn btn-primary btn-s" type="reset" ng-click="chatArray = null;" ng-hide="false">Clear Chat</button>
+                                    <br>
+                                    <center/> {{result}}
+                                </p>
+                                <center/><i ng-show="spinner " class="fa fa-circle-o-notch fa-spin "></i>
+                            </fieldset>
+                        </form>
+                        <!--<form fix-bottom="chat" ng-submit="SendChat(chat)">
+                            <div id="chat" style="height:150px; overflow-y:scroll">
+                                <table class="table">
+                                    <tbody>
+                                        <tr ng-repeat="msg in chatArray track by $index">
+                                            <td><strong>{{ msg.sentby }} : </strong>
+
+                                            </td>
+                                            <td>{{msg.text}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <input type="text" ng-model="chat.text" class="form-control" placeholder="Enter a Message ">
+                            <button class="btn btn-primary btn-s" ng-click="SendChat(chat)" type="submit" ng-hide="false">Submit</button>
+                        </form>-->
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

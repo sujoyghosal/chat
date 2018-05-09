@@ -12,12 +12,12 @@ app.config([
         $routeProvider
             .when("/login", {
                 templateUrl: "Login.html",
-                controller: "LoginCtrl",
+                controller: "ChatCtrl",
                 isLogin: true
             })
             .when("/home", {
                 templateUrl: "home.html",
-                controller: "LoginCtrl"
+                controller: "ChatCtrl"
             })
             .when("/chat", {
                 templateUrl: "chatbox.html",
@@ -29,19 +29,19 @@ app.config([
             })
             .when("/register", {
                 templateUrl: "Register.html",
-                controller: "RegisterCtrl"
+                controller: "ChatCtrl"
             })
             .when("/updateuser", {
                 templateUrl: "UpdateProfile.html",
-                controller: "RegisterCtrl"
+                controller: "ChatCtrl"
             })
             .when("/updatepassword", {
                 templateUrl: "UpdateProfile.html",
-                controller: "RegisterCtrl"
+                controller: "ChatCtrl"
             })
             .when("/signup", {
                 templateUrl: "Register.html",
-                controller: "RegisterCtrl"
+                controller: "ChatCtrl"
             })
             .when("/getdeal", {
                 templateUrl: "Listdeals.html",
@@ -93,7 +93,7 @@ app.config([
             })
             .when("/resetpw", {
                 templateUrl: "ResetPassword.html",
-                controller: "RegisterCtrl"
+                controller: "ChatCtrl"
             })
             .when("/index", {
                 templateUrl: "index.html",
@@ -104,7 +104,7 @@ app.config([
                 controller: "ChatCtrl"
             })
             .otherwise({
-                redirectTo: "/login"
+                redirectTo: "/home"
             });
     }
 ]);
@@ -260,7 +260,7 @@ var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
 //var BASEURL_PERSONAL = "http://localhost:9000";
 var BASEURL = BASEURL_PERSONAL;
-
+var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
@@ -347,6 +347,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.$on("NewLogin", function() {
         $scope.setupWebSockets(UserService.getLoggedIn().email, 'newlogin');
     });
+    $scope.$on("CallCreateUserMethod", function() {
+        $scope.CreateUser(UserService.getLoggedIn());
+    });
     $rootScope.$on("Logout", function() {
         console.log("####Sending logout event to server for broadcasting....");
         $scope.setupWebSockets(UserService.getLoggedIn().email, 'logout');
@@ -355,13 +358,20 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         UserService.setLoggedInStatus(false);
         $rootScope.loggedIn = false;
         $scope.eventsCount = 0;
+        firebase.auth().signOut().then(function() {
+            // Sign-out successful.
+            console.log("####Logout Done!")
+        }, function(error) {
+            // An error happened.
+            console.error("##### Problem logging user out " + JSON.stringify(error));
+        });
         console.log("Logout: Set logged in status = " + UserService.getLoggedInStatus());
         $location.path("/login");
         return;
     });
     $rootScope.$on('$routeChangeStart', function(event, next) {
 
-        if (!UserService.getLoggedInStatus() && ("/home" === $location.path() || "/chat" === $location.path() ||
+        if (!UserService.getLoggedInStatus() && ("/login" === $location.path() || "/chat" === $location.path() ||
                 "/subscribe" === $location.path() || "/notifications" === $location.path() || "/personality" === $location.path() ||
                 "/updatepassword" === $location.path() || "/createneed" === $location.path() ||
                 "/createemergency" === $location.path() || "/offershistory" === $location.path())) {
@@ -369,7 +379,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             /* You can save the user's location to take him back to the same page after he has logged-in */
             $rootScope.savedLocation = $location.path();
 
-            $location.path("/login");
+            $location.path("/home");
             return;
         } else if (UserService.getLoggedInStatus() && "/login" == $location.path()) {
             $location.path("/home");
@@ -833,6 +843,135 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         });
     };
 
+    $scope.initApp = function() {
+        var uiConfig = {
+            signInSuccessUrl: GUIURL + '/#home',
+            signInOptions: [
+                // Leave the lines as is for the providers you want to offer your users.
+                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+                firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+                firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+                firebase.auth.GithubAuthProvider.PROVIDER_ID,
+                firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                firebase.auth.PhoneAuthProvider.PROVIDER_ID
+            ],
+            credentialHelper: firebaseui.auth.CredentialHelper.ACCOUNT_CHOOSER_COM,
+            // Terms of service url.
+            tosUrl: GUIURL + '/#tos'
+        };
+        var ui = new firebaseui.auth.AuthUI(firebase.auth());
+        // The start method will wait until the DOM is loaded.
+        ui.start('#firebaseui-auth-container', uiConfig);
+        ui.disableAutoSignIn();
+
+        firebase.auth().onAuthStateChanged(function(user) {
+                thisUser = user;
+
+                if (user) {
+                    // User is signed in.
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var uid = user.uid;
+                    var phoneNumber = user.phoneNumber;
+                    var providerData = user.providerData;
+                    var thisUser = {
+                        "fullname": user.displayName,
+                        "email": user.email,
+                        "phone": user.phoneNumber,
+                        "photoURL": user.photoURL,
+                        "emailVerified": user.emailVerified,
+                        "providerData": user.providerData
+                    }
+                    console.log("##### logged in user found");
+                    UserService.setLoggedIn(thisUser);
+                    $rootScope.loggedIn = true;
+                    $scope.GetUserByEmail(user.email, 'login');
+                    user.getIdToken().then(function(accessToken) {
+                        document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
+                        /*document.getElementById('sign-in').textContent = 'Sign out';
+                        document.getElementById('account-details').textContent = JSON.stringify({
+                            displayName: displayName,
+                            email: email,
+                            emailVerified: emailVerified,
+                            phoneNumber: phoneNumber,
+                            photoURL: photoURL,
+                            uid: uid,
+                            accessToken: accessToken,
+                            providerData: providerData
+                        }, null, '  ');*/
+                    });
+                } else {
+                    // User is signed out.
+                    /*document.getElementById('sign-in-status').textContent = 'Signed out';
+                    document.getElementById('sign-in').textContent = 'Sign in';
+                    document.getElementById('account-details').textContent = 'null';*/
+                    /*var ui = new firebaseui.auth.AuthUI(firebase.auth());
+                    // The start method will wait until the DOM is loaded.
+                    ui.start('#firebaseui-auth-container', uiConfig);
+                    ui.disableAutoSignIn();*/
+                    console.log("##### Prompting user login as no logged in user found");
+                    $rootScope.loggedIn = false;
+                }
+            },
+            function(error) {
+                console.log(error);
+            });
+    }
+    $scope.GetUserByEmail = function(email, context) {
+        if (!email) {
+            Notification.error({ message: "Email Not Found!", positionY: 'bottom', positionX: 'center' });
+            $scope.found = "ERROR - Email NOT FOUND";
+            return;
+        }
+        $scope.spinner = true;
+        //first create group with id=<city>-<place>
+        var getURL = BASEURL + "/getuser?email=" + email.trim();
+        getURL = encodeURI(getURL);
+        $http({
+            method: "GET",
+            url: getURL
+        }).then(
+            function successCallback(response) {
+                // this callback will be called asynchronously
+                // when the response is available
+                console.log("GetUserByEmail Response: " + JSON.stringify(response));
+                $scope.spinner = false;
+                if (!DataService.isValidObject(response) || !DataService.isValidArray(response.data)) {
+                    console.log("#####No User Found!");
+                    Notification.error({ message: "User Not Found!", positionY: 'bottom', positionX: 'center' });
+                    if (context == 'login') {
+                        UserService.setLoggedInStatus(true);
+                        console.log("Creating New User With Data: " + JSON.stringify(UserService.getLoggedIn()));
+                        //$rootScope.$emit("CallCreateUserMethod", JSON.stringify(UserService.getLoggedIn()));
+                        $scope.CreateUser(JSON.stringify(UserService.getLoggedIn()))
+                            //$location.path('/home');
+                        return;
+                    }
+                } else {
+                    var users = [];
+                    users = response.data;
+                    if (context === 'login') {
+                        //UserService.setLoggedIn(users[0]);
+                        UserService.setLoggedInStatus(true);
+                        UserService.setLoggedIn(users[0]);
+                        $rootScope.username = users[0].fullname;
+                        $rootScope.loggedIn = true;
+                        //$rootScope.$emit("CallGetGroupsForUserMethod", {});
+                        $location.path($rootScope.savedLocation);
+                    }
+                    return;
+                }
+            },
+            function errorCallback(error) {
+                // called asynchronously if an error occurs
+                // or server returns response with an error status.
+                $scope.spinner = false;
+                $scope.passengers = "ERROR GETTING USER BY EMAIL";
+            }
+        );
+    };
     $scope.setupWebSockets = function(email, arg) {
         console.log("#####Setting up listener for alerts");
         socket = io.connect(BASEURL);
@@ -1870,6 +2009,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
 
         var getURL = BASEURL + "/getgroupsforuser?uuid=" + uuid;
         getURL = encodeURI(getURL);
+        console.log("####GetGroupsForUser URL=" + getURL);
         $http({
             method: "GET",
             url: getURL
@@ -2414,18 +2554,6 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 }
             );
     };
-
-});
-app.controller("LoginCtrl", function(
-    $scope,
-    $rootScope,
-    $http,
-    $location,
-    $routeParams,
-    Notification,
-    UserService,
-    DataService
-) {
     $scope.spinner = false;
     $scope.isCollapsed = true;
     $rootScope.mobileDevice = false;
@@ -2503,26 +2631,15 @@ app.controller("LoginCtrl", function(
             }
         );
     };
-});
-app.controller("RegisterCtrl", function($scope, $http, $location, $window, UserService, DataService, Notification) {
-    $scope.spinner = false;
     $scope.login_fullname = UserService.getLoggedIn().fullname;
     $scope.login_email = UserService.getLoggedIn().email;
     //    $scope.login_phone = UserService.getLoggedIn().phone;
     //    $scope.login_address = UserService.getLoggedIn().address;
     $scope.CreateUser = function(user) {
         $scope.spinner = true;
-        var getURL = BASEURL + "/createuser";
-        var reqObj = {
-            email: user.email.trim(),
-            fullname: user.fullname.trim(),
-            password: user.password.trim(),
-            organisation: user.org,
-            ngo: user.ngo
-        };
-        getURL = encodeURI(getURL);
-        console.log("ContactUs URL=" + getURL);
-        $http.post(getURL, JSON.stringify(reqObj))
+        var postURL = BASEURL + "/createuserwithoauth";
+        console.log("CreateUer Object=" + user);
+        $http.post(postURL, user)
             .then(
                 function successCallback(response) {
                     // this callback will be called asynchronously
@@ -2662,6 +2779,7 @@ app.controller("RegisterCtrl", function($scope, $http, $location, $window, UserS
         $window.history.back();
     }
 });
+
 app.directive("fixBottom", function() {
     return {
         link: function(scope, element, attrs) {

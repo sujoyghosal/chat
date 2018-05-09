@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Subscribe Events</title>
+</head>
+
+<body>
+    <p align="left">If you are interested in specific types offers for a city, add that place name and item here. Whenever someone creates an emergency need or deal offer for that item and place, you will get a notification.</p>
+    <div ng-app="myApp" ng-controller="dealCtrl">
+        <label for="city">
+                        <p/>Enter City: </label>
+
+        <br>
+        <input type="text" name="city" ng-model="data.city" />
+        <br>
+        <!--        <label for="item">
+                    <p/>Enter Item: </label>
+        <br>
+        <input type="text" name="item" ng-model="data.item" /> -->
+        <br>
+        <p>
+            <label for="sel1">Select Type:</label>
+            <select class="form-control" id="sel1" name="itemtype" ng-model="data.itemtype" style="width:200px">
+                    <option value="" selected disabled>Select Type</option>
+                    <!--<option value="" disabled>Emergencies</option>
+                    <option value="Blood">Blood Needed</option>
+                    <option value="Life Saving Drugs">Life Saving Drugs</option>
+                    <option value="Organs">Organs Needed</option>
+                    <option value="General Medicines">General Medicines</option>
+                    <option value="Ambulance">Ambulance Services</option>
+                    <option value="Doctor">Doctor</option>
+                    <option value="Medical">Other Medical</option>
+                    <option value="Natural Disaster">Natural Disaster</option>
+                    <option value="Terrorism">Terrorism</option>
+                    <option value="Accident">Accident</option>
+                    <option value="Women's Safety">Women's Safety</option>
+                    <option value="Children's Safety">Children's Safety</option>
+                    <option value="" disabled>Non-Emergencies</option>-->
+                        <option value="Electronics">Electronics</option>
+                        <option value="Fashion">Utilities</option>
+                        <option value="Educational">Educational</option>
+                        <option value="Medical">Medical</option>
+                        <option value="Food">Food</option>
+                        <option value="Furniture">Furniture</option>
+                        <option value="Clothes">Clothes</option>
+                        <option value="Fashion">Fashion</option>
+                        <option value="Household">Household</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Shoes">Shoes</option>                               
+                        <option value="Other">Other</option>
+                    </select>
+        </p>
+
+        <br>
+        <input type="button" class="btn btn-primary btn-md" name="SubmitTo" value="Subscribe" ng-click="Subscribe(data, login_user); spinner = true;">
+        <br>
+        <div ng-show="spinner">
+            <i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+        </div>
+        {{result}}
+    </div>
+    <hr>
+
+    <p align="center">YOUR CURRENT SUBSCRIPTIONS</p>
+    <div ng-show="usergroups.length > 0" ng-init="result=''">
+        <table class="table table-bordered" id="events">
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tr ng-repeat="row in usergroups">
+                <td><i class="fa fa-check-square-o fa-2x"></i>&nbsp;&nbsp;{{row.name}}</td>
+                <td><button type="button" class="btn btn-primary btn-md" ng-click="DeleteGroupForUser(row.name); spinner = true;">Unsubscribe</button></td>
+            </tr>
+        </table>
+        <div ng-show="spinner">
+            <i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+        </div>
+    </div>
+    <div ng-show="usergroups.length == 0">
+        You are currently not subscribed to any events.
+    </div>
+
+
+</body>
+
+</html>
