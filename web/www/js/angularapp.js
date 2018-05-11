@@ -260,8 +260,8 @@ var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
 //var BASEURL_PERSONAL = "http://localhost:9000";
 var BASEURL = BASEURL_PERSONAL;
-//var GUIURL = 'https://chatwebsujoy.mybluemix.net';
-var GUIURL = 'http://localhost:3000';
+var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+//var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
@@ -672,7 +672,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 //Notification.success({ message: "Good job! Successufully Published Your Chat text. Thank You!", positionY: 'bottom', positionX: 'center' });
                 $scope.spinner = false;
                 $scope.status = "response.statusText";
-                $scope.$emit("StopTimer", {});
+                //$scope.$emit("StopTimer", {});
                 //schedulePush(new Date());
             },
             function errorCallback(error) {
