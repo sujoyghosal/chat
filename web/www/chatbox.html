@@ -20,23 +20,11 @@
                         <label for="sel1">{{ targetChatuserName }}</label>
                         <button type="button" class="btn btn-info" ng-click="AnalysePersonality()">Analyse Personality of {{ targetChatuserName }}</button>
                     </p>
-                    <!--<p><span class="fontawesome-user"></span>
-                        <input id="name" name="name" ng-model="chat.name" ng-minlength="2" type="text" placeholder="&#xf007; Name" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.name.$dirty && myForm.name.$invalid">Invalid Name</p>
-                    </p>
-
-                    <p><span class="fontawesome-envelope"></span>
-                        <input id="email" name="email" ng-model="chat.email" ng-minlength="2" type="email" placeholder="&#xf0e0; EMail" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.email.$dirty && myForm.email.$invalid">Invalid Email</p>
-                    </p>-->
                     <br>
-                    <table>
-                        <tr ng-repeat="x in chatArray track by $index">
-                            <td>{{ x.sentby + ' :' }}</td>
-                            <td>{{ x.text }}</td>
-                        </tr>
-                    </table>
-
+                    <ul>
+                        <li ng-repeat-start="x in chatArray track by $index">{{ x.sentby + ' :' }}</li>
+                        <li ng-repeat-end>{{ x.text + ' ' + x.time }}</li>
+                    </ul>
                     <p>
                         <input id="items" name="text" ng-model="chat.text" ng-minlength="2" type="text" autocomplete="off" placeholder="&#xf086; Chat Text" class="form-control input-md" ng-required="true">
                         <p class="isa_error" ng-show="myForm.items.$dirty && myForm.items.$invalid">Please Enter Text</p>

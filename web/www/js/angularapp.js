@@ -646,9 +646,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             Notification.error({ message: "The user seems offline now.", positionY: 'bottom', positionX: 'center' });
             return;
         }
+        var time = new Date();
+        time = time.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
         var msg = {
             "sentby": $rootScope.username,
-            "text": chat.text
+            "text": chat.text,
+            "time": time
         };
         $rootScope.chatArray.push(msg);
 

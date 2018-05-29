@@ -4,6 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <title>Freecycle - Contact Us</title>
+    <style>
+        #mylist {
+            width: auto;
+            height: 200px;
+            padding: 20px;
+            background-color: #eeeeee;
+            overflow-y: auto;
+            text-align: left;
+            list-style-type: none;
+        }
+    </style>
+    <script>
+        $('.add').click(function() {
+
+            //$("#mylist").append("<li>Test</li>");
+
+            $('#mylist').animate({
+                scrollTop: $('#mylist').prop("scrollHeight")
+            }, 500);
+
+        });
+    </script>
 </head>
 
 <body ng-app="myApp">
@@ -48,20 +70,30 @@
                         <form class="form-horizontal" name="myForm" autocomplete="on" fix-bottom="chat" novalidate>
                             <fieldset class="clearfix:after">
 
-                                <div id="chat" style="height:150px; overflow-y:scroll">
-                                    <table class="table">
+
+                                <!--<table class="table">
                                         <tbody>
                                             <tr ng-repeat="msg in chatArray track by $index">
                                                 <td><strong>{{ msg.sentby }} </strong>: {{ ' ' + msg.text }}</td>
                                             </tr>
                                         </tbody>
-                                    </table>
+                                    </table>-->
+                                <div id="chat" class="w3-container">
+
+                                    <ul id="mylist">
+                                        <li ng-repeat="x in chatArray track by $index">
+                                            <div class="w3-panel w3-card-4 w3-yellow">{{ x.sentby + ': ' + x.text + ' ' }}
+                                                <font color="#C0C0C0">{{ x.time }}</font>
+                                            </div>
+                                        </li>
+                                    </ul>
+
                                 </div>
                                 <p>
                                     <input type="text" ng-model="chat.text" class="form-control" placeholder="Enter a Message "> </p>
                                 <p>
-                                    <button class="btn btn-primary btn-s" type="submit" ng-click="SendChat(chat)" ng-hide="false">Submit</button>
-                                    <button class="btn btn-primary btn-s" type="reset" ng-click="chatArray = null;" ng-hide="false">Clear Chat</button>
+                                    <button class="btn btn-primary btn-s add" type="submit" ng-click="SendChat(chat)" ng-hide="false">Submit</button>
+                                    <!--<button class="btn btn-primary btn-s" type="reset" ng-click="chatArray = null;" ng-hide="false">Clear Chat</button>-->
                                     <br>
                                     <center/> {{result}}
                                 </p>
