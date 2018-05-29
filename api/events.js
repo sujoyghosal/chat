@@ -3,12 +3,12 @@ var usergrid = require("usergrid");
 var randtoken = require("rand-token");
 var nodemailer = require('nodemailer');
 var request = require("request");
-
+/*
 // Run Locally
 var PORT = process.env.VCAP_APP_PORT || 9000;
 var BASEURL = "http://localhost:" + PORT;
 var BASEGUIURL = "http://localhost:3000";
-/*
+*/
 //Run on Cloud
 var BASEURL_APIGEE = "http://sujoyghosal-test.apigee.net/freecycleapis";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
@@ -23,7 +23,7 @@ var BASEURL = BASEURL_PERSONAL;
 var BASEGUIURL = BASEGUIURL_PERSONAL;
 var PORT = process.env.VCAP_APP_PORT || 80;
 //var PORT = process.env.VCAP_APP_PORT || 9000;
-*/
+
 // Usergrid config - Common for all platforms
 var APPNAME_DEV = 'deals';
 var CLIENTID_DEV = 'b3U6qZdN9MaZEeanNBIuBzeXfQ';
@@ -1705,7 +1705,7 @@ io.on('connection', function(socket) {
             console.log("####Ignoring null or undefined login time join request");
             return;
         }
-        console.log("####Conecting client socket to room " + loggedinUser.email);
+        //console.log("####Conecting client socket to room " + loggedinUser.email);
         socket.join(loggedinUser.email);
         var online = false;
         if (onlineUsers && onlineUsers.length > 0) {
@@ -1723,27 +1723,31 @@ io.on('connection', function(socket) {
             io.emit('activeuserschanged', loggedinUser.email);
         }
     });
-    socket.on('join', function(targetUser) { //login
-        if (!targetUser || targetUser == undefined) {
+    socket.on('join', function(chatObj) { //login
+        if (!chatObj || !chatObj.target || chatObj.target == undefined) {
             console.log("####Ignoring null or undefined join request");
             return;
         } else {
-            console.log("####Checking if target user " + JSON.stringify(targetUser) + " is online.")
+            console.log("####Checking if target user " + JSON.stringify(chatObj) + " is online.")
         }
         if (onlineUsers && onlineUsers.length > 0) {
             var online = false;
             for (i = 0; i < onlineUsers.length; i++) {
-                if (onlineUsers[i].email === targetUser.email) {
+                if (onlineUsers[i].email === chatObj.target.email) {
                     online = true;
                     break;
                 }
             }
             if (!online) {
-                console.log("####Cannot join room " + targetUser.email + ", seems offline");
-                socket.emit('offline', targetUser.email);
+                console.log("####Cannot join room " + chatObj.target.email + ", seems offline");
+                socket.emit('offline', chatObj.target.email);
             } else {
-                console.log("####Joining room " + targetUser.email);
-                socket.join(targetUser.email);
+                console.log("####Joining room " + chatObj.target.email);
+                socket.join(chatObj.target.email);
+                io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
+                //io.sockets.emit('matchingevent', data);
+                console.log("####Sent chatevent to email " + chatObj.target.email);
+                console.log("#####Event Object = " + JSON.stringify(chatObj));
             }
         }
 
