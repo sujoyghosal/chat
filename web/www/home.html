@@ -57,7 +57,7 @@
                             </div>
                         </div>-->
                         <select class="form-control" id="targetuser" name="targetuser" ng-change="StartChat(chat)" ng-model="chat.targetuser">                            
-                            <option ng-show="x.fullname != null && x.fullname.length > 1" value="{{ x.email }}" ng-repeat="x in onlineUsers">{{ x.fullname }}</option>
+                            <option ng-show="x.fullname != null && x.fullname.length > 1 && x.email !== login_email" value="{{ x.email }}" ng-repeat="x in onlineUsers">{{ x.fullname }}</option>
                         </select>
                         <!--<select class="form-control" id="targetuser" name="targetuser" ng-init="StartChat(chat)" ng-model="chat.targetuser" ng-options="x.value as x.fullname for x in onlineUsers" style="width:200px">
                         </select>-->

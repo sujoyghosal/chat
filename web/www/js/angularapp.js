@@ -258,13 +258,13 @@ var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
-//var BASEURL_PERSONAL = "http://localhost:9000";
+
 var BASEURL = BASEURL_PERSONAL;
 var GUIURL = 'https://chatwebsujoy.mybluemix.net';
 //var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
-app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
+app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $window, Notification, Socialshare, UserService, DataService) {
     $scope.spinner = false;
     $scope.alldeals = false;
     $scope.allneeds = false;
@@ -380,7 +380,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         if (!UserService.getLoggedInStatus() && ("/login" === $location.path() || "/chat" === $location.path() ||
                 "/subscribe" === $location.path() || "/notifications" === $location.path() || "/personality" === $location.path() ||
                 "/updatepassword" === $location.path() || "/createneed" === $location.path() ||
-                "/home" === $location.path() || "/offershistory" === $location.path())) {
+                "/offershistory" === $location.path())) {
             //console.log("User not logged in for access to " + $location.path());
             /* You can save the user's location to take him back to the same page after he has logged-in */
             $rootScope.savedLocation = $location.path();
@@ -689,11 +689,11 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         );
     };
     $scope.StartTimer = function() {
-        $scope.timeout = $timeout(function() {
+        $scope.timeout = $interval(function() {
             console.log("####Sending heartbeat event to server....");
             //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
             $rootScope.$emit("alive", {});
-        }, 60000);
+        }, 10000);
 
     }
     $scope.StopTimer = function() {
@@ -896,7 +896,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     console.log("##### logged in user found");
                     UserService.setLoggedIn(thisUser);
                     $rootScope.loggedIn = true;
-                    $scope.GetUserByEmail(user.email, 'login');
+                    $rootScope.login_email = user.email;
+                    //$scope.GetUserByEmail(user.email, 'login');
+                    UserService.setLoggedInStatus(true);
+                    $rootScope.username = user.displayName;
+                    $rootScope.login_email = user.email;
+                    $rootScope.loggedIn = true;
                     user.getIdToken().then(function(accessToken) {
                         //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
                         /*document.getElementById('sign-in').textContent = 'Sign out';
@@ -914,7 +919,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     $rootScope.$emit("CallSetupWebsocketsMethod", {});
                     $rootScope.$emit("CallGetOnlineUsersMethod", {});
                     $rootScope.$emit("CallStartTimerMethod", {});
-                    $rootScope.$emit("NewLogin", {});
+                    //$rootScope.$emit("NewLogin", {});
                 } else {
                     // User is signed out.
                     /*document.getElementById('sign-in-status').textContent = 'Signed out';
@@ -992,16 +997,19 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             "fullname": $rootScope.targetChatuserName,
             "email": email
         }
+        var d = new Date();
         var loggedinUser = {
             "fullname": UserService.getLoggedIn().fullname,
             "email": UserService.getLoggedIn().email,
-            "photoURL": UserService.getLoggedIn().photoURL
+            "photoURL": UserService.getLoggedIn().photoURL,
+            "lastHeartBeat": d
         }
         socket.on('connect', function() {
             console.log("##### Connected to server socket!");
             console.log("#### Joining events channel " + loggedinUser.email);
             socket.emit('room', loggedinUser);
         });
+
         if (arg && arg === "send") {
             console.log("##### Connected to server socket!");
             console.log("#### Sending chat event to  " + JSON.stringify(targetUser));
