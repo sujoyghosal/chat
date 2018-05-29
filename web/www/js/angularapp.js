@@ -380,7 +380,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         if (!UserService.getLoggedInStatus() && ("/login" === $location.path() || "/chat" === $location.path() ||
                 "/subscribe" === $location.path() || "/notifications" === $location.path() || "/personality" === $location.path() ||
                 "/updatepassword" === $location.path() || "/createneed" === $location.path() ||
-                "/createemergency" === $location.path() || "/offershistory" === $location.path())) {
+                "/home" === $location.path() || "/offershistory" === $location.path())) {
             //console.log("User not logged in for access to " + $location.path());
             /* You can save the user's location to take him back to the same page after he has logged-in */
             $rootScope.savedLocation = $location.path();
