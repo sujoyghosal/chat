@@ -634,6 +634,11 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
         var targetUSerOffline = true;
+        if (!$rootScope.targetChatuser || $rootScope.targetChatuser.length < 2) {
+            console.log("####SendChat -> target user seems offline");
+            Notification.error({ message: "Select an online user from list", positionY: 'bottom', positionX: 'center' });
+            return;
+        }
         for (i = 0; i < $rootScope.onlineUsers.length; i++) {
             var auser = $rootScope.onlineUsers[i];
             if ($rootScope.targetChatuser === auser.email) {
@@ -654,10 +659,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             "time": time
         };
         $rootScope.chatArray.push(msg);
-
+        $rootScope.chatText = msg;
         $scope.setupWebSockets($rootScope.targetChatuser, 'send');
-        var now = new Date();
+        $scope.chat.text = null;
+        /*var now = new Date();
         $scope.loginResult = "Sent Request";
+
         var postURL = BASEURL + "/sendchat";
         var reqObj = {
             email: $rootScope.targetChatuser,
@@ -686,7 +693,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 $scope.spinner = false;
                 $scope.status = error.statusText;
             }
-        );
+        );*/
     };
     $scope.StartTimer = function() {
         $scope.timeout = $interval(function() {
@@ -1013,7 +1020,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         if (arg && arg === "send") {
             console.log("##### Connected to server socket!");
             console.log("#### Sending chat event to  " + JSON.stringify(targetUser));
-            socket.emit('join', targetUser);
+            var chatObj = {
+                from: $rootScope.chatText,
+                target: targetUser,
+                timestamp: d.getTime()
+            };
+            socket.emit('join', chatObj);
         } else if (arg && arg === "leave") {
             console.log("#### Leaving room " + email);
             socket.emit('leave', email);
@@ -1026,27 +1038,28 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         }
         socket.on('chatevent', function(data) {
             console.log("####received chat event: " + JSON.stringify(data));
-            if (!DataService.isValidObject(data) || !DataService.isValidArray(data.entities)) {
+            if (!DataService.isValidObject(data)) {
                 console.log("#####received matching event but no data!");
                 return;
-            } else if (UserService.getLoggedIn().email === data.entities[0].email) {
+            } else if (UserService.getLoggedIn().email === data.target.email) {
                 console.log("#####received chat event sent to me!");
-                console.log("#####lastUUID for HandleEvent=" + $rootScope.lastUUID + " and entity uuid=" + data.entities[0].uuid);
-                if ($rootScope.lastUUID === data.entities[0].uuid) {
+                //console.log("#####lastUUID for HandleEvent=" + $rootScope.lastUUID + " and entity uuid=" + data.entities[0].uuid);
+                if ($rootScope.lastUUID === data.timestamp) {
                     console.log("#####Discarding duplicate events");
                 } else {
                     var msg = {
-                        "sentby": JSON.stringify(data.entities[0].sentby).replace(/\"$/, "").replace(/\"/, ""),
-                        "text": JSON.stringify(data.entities[0].text).replace(/\"$/, "").replace(/\"/, "")
+                        "sentby": JSON.stringify(data.from.sentby).replace(/\"$/, "").replace(/\"/, ""),
+                        "text": JSON.stringify(data.from.text).replace(/\"$/, "").replace(/\"/, ""),
+                        "time": data.from.time
                     };
                     console.log("#####received chat event created by someone else! " + JSON.stringify(msg));
                     $rootScope.chatArray.push(msg);
                     $rootScope.secondPersonTextArray.push(msg.text);
-                    $rootScope.targetChatuser = JSON.stringify(data.entities[0].sentbyemail).replace(/\"$/, "").replace(/\"/, "");
+                    $rootScope.targetChatuser = JSON.stringify(data.from.sentby).replace(/\"$/, "").replace(/\"/, "");
                     console.log("chatArray = " + JSON.stringify($rootScope.chatArray));
                     $scope.$apply();
                     //$scope.HandleEvent("Chat Message", msg);
-                    $rootScope.lastUUID = data.entities[0].uuid;
+                    $rootScope.lastUUID = data.timestamp;
                 }
             } else {
                 console.log("#####Received chat event not meant for me!");
