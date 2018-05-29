@@ -3,12 +3,12 @@ var usergrid = require("usergrid");
 var randtoken = require("rand-token");
 var nodemailer = require('nodemailer');
 var request = require("request");
-/*
+
 // Run Locally
 var PORT = process.env.VCAP_APP_PORT || 9000;
 var BASEURL = "http://localhost:" + PORT;
 var BASEGUIURL = "http://localhost:3000";
-*/
+/*
 //Run on Cloud
 var BASEURL_APIGEE = "http://sujoyghosal-test.apigee.net/freecycleapis";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
@@ -23,7 +23,7 @@ var BASEURL = BASEURL_PERSONAL;
 var BASEGUIURL = BASEGUIURL_PERSONAL;
 var PORT = process.env.VCAP_APP_PORT || 80;
 //var PORT = process.env.VCAP_APP_PORT || 9000;
-
+*/
 // Usergrid config - Common for all platforms
 var APPNAME_DEV = 'deals';
 var CLIENTID_DEV = 'b3U6qZdN9MaZEeanNBIuBzeXfQ';
@@ -1665,6 +1665,23 @@ function logIn(req, res, next) {
     });
 }
 
+function removeOfflineUsersFromList() {
+    console.log("Checking for offline users.....");
+    var time = new Date();
+    if (onlineUsers && onlineUsers.length > 0) {
+        for (i = 0; i < onlineUsers.length; i++) {
+            console.log("OnlineUsers = " + JSON.stringify(onlineUsers[i]));
+            if (Math.abs((Date.parse(onlineUsers[i].lastHeartBeat) - time.getTime()) / 1000) > 60) {
+                console.log(onlineUsers[i].email + " has not pinged lately. Removing from online list.....");
+                onlineUsers.splice(i, 1);
+            }
+        }
+    }
+
+    console.log("#### Broadcasting latest Online Users List.." + JSON.stringify(onlineUsers));
+    io.emit('activeuserschanged', JSON.stringify(onlineUsers));
+}
+
 function expireToken() {
     console.log("Getting rid of user authentication token");
     if (loggedIn !== null) {
@@ -1680,6 +1697,7 @@ var mysocket = null;
 http.listen(PORT, function() {
     console.log('listening on *:' + PORT);
 });
+setInterval(removeOfflineUsersFromList, 20000);
 io.on('connection', function(socket) {
     mysocket = socket;
     socket.on('room', function(loggedinUser) { //login
@@ -1698,6 +1716,7 @@ io.on('connection', function(socket) {
                 }
             }
         }
+        //removeOfflineUsersFromList();
         if (!online) {
             onlineUsers.push(loggedinUser);
             console.log("#### Online now - " + JSON.stringify(loggedinUser));
@@ -1743,6 +1762,31 @@ io.on('connection', function(socket) {
                     console.log("Removed user " + room + "from online list");
                 }
             }
+        }
+    });
+    socket.on('alive', function(loggedinUser) {
+        if (!loggedinUser || !loggedinUser.email || loggedinUser.email == undefined) {
+            console.log("####Ignoring null or undefined alive event");
+            return;
+        }
+        console.log("#### Alive event received for user: " + loggedinUser.email);
+        //removeOfflineUsersFromList();
+        var alreadyInList = false;
+        if (onlineUsers && onlineUsers.length > 0) {
+            for (i = 0; i < onlineUsers.length; i++) {
+                if (onlineUsers[i].email === loggedinUser.email) {
+                    console.log("User already in alive list");
+                    alreadyInList = true;
+                    break;
+                }
+            }
+        }
+        if (!alreadyInList) {
+            onlineUsers.push(loggedinUser);
+            console.log("#### Broadcasting Online Users List");
+            io.emit('activeuserschanged', JSON.stringify(onlineUsers));
+        } else {
+
         }
     });
     socket.on('logout', function(email) {
