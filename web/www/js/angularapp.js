@@ -258,13 +258,13 @@ var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
-
+//var BASEURL_PERSONAL = "http://localhost:9000";
 var BASEURL = BASEURL_PERSONAL;
 var GUIURL = 'https://chatwebsujoy.mybluemix.net';
 //var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
-app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $window, Notification, Socialshare, UserService, DataService) {
+app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
     $scope.spinner = false;
     $scope.alldeals = false;
     $scope.allneeds = false;
@@ -380,7 +380,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         if (!UserService.getLoggedInStatus() && ("/login" === $location.path() || "/chat" === $location.path() ||
                 "/subscribe" === $location.path() || "/notifications" === $location.path() || "/personality" === $location.path() ||
                 "/updatepassword" === $location.path() || "/createneed" === $location.path() ||
-                "/offershistory" === $location.path())) {
+                "/createemergency" === $location.path() || "/offershistory" === $location.path())) {
             //console.log("User not logged in for access to " + $location.path());
             /* You can save the user's location to take him back to the same page after he has logged-in */
             $rootScope.savedLocation = $location.path();
@@ -634,11 +634,6 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
         var targetUSerOffline = true;
-        if (!$rootScope.targetChatuser || $rootScope.targetChatuser.length < 2) {
-            console.log("####SendChat -> target user seems offline");
-            Notification.error({ message: "Select an online user from list", positionY: 'bottom', positionX: 'center' });
-            return;
-        }
         for (i = 0; i < $rootScope.onlineUsers.length; i++) {
             var auser = $rootScope.onlineUsers[i];
             if ($rootScope.targetChatuser === auser.email) {
@@ -659,12 +654,10 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             "time": time
         };
         $rootScope.chatArray.push(msg);
-        $rootScope.chatText = msg;
-        $scope.setupWebSockets($rootScope.targetChatuser, 'send');
-        $scope.chat.text = null;
-        /*var now = new Date();
-        $scope.loginResult = "Sent Request";
 
+        $scope.setupWebSockets($rootScope.targetChatuser, 'send');
+        var now = new Date();
+        $scope.loginResult = "Sent Request";
         var postURL = BASEURL + "/sendchat";
         var reqObj = {
             email: $rootScope.targetChatuser,
@@ -693,14 +686,14 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 $scope.spinner = false;
                 $scope.status = error.statusText;
             }
-        );*/
+        );
     };
     $scope.StartTimer = function() {
-        $scope.timeout = $interval(function() {
+        $scope.timeout = $timeout(function() {
             console.log("####Sending heartbeat event to server....");
             //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
             $rootScope.$emit("alive", {});
-        }, 10000);
+        }, 60000);
 
     }
     $scope.StopTimer = function() {
@@ -903,12 +896,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     console.log("##### logged in user found");
                     UserService.setLoggedIn(thisUser);
                     $rootScope.loggedIn = true;
-                    $rootScope.login_email = user.email;
-                    //$scope.GetUserByEmail(user.email, 'login');
-                    UserService.setLoggedInStatus(true);
-                    $rootScope.username = user.displayName;
-                    $rootScope.login_email = user.email;
-                    $rootScope.loggedIn = true;
+                    $scope.GetUserByEmail(user.email, 'login');
                     user.getIdToken().then(function(accessToken) {
                         //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
                         /*document.getElementById('sign-in').textContent = 'Sign out';
@@ -926,7 +914,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     $rootScope.$emit("CallSetupWebsocketsMethod", {});
                     $rootScope.$emit("CallGetOnlineUsersMethod", {});
                     $rootScope.$emit("CallStartTimerMethod", {});
-                    //$rootScope.$emit("NewLogin", {});
+                    $rootScope.$emit("NewLogin", {});
                 } else {
                     // User is signed out.
                     /*document.getElementById('sign-in-status').textContent = 'Signed out';
@@ -1004,28 +992,20 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             "fullname": $rootScope.targetChatuserName,
             "email": email
         }
-        var d = new Date();
         var loggedinUser = {
             "fullname": UserService.getLoggedIn().fullname,
             "email": UserService.getLoggedIn().email,
-            "photoURL": UserService.getLoggedIn().photoURL,
-            "lastHeartBeat": d
+            "photoURL": UserService.getLoggedIn().photoURL
         }
         socket.on('connect', function() {
             console.log("##### Connected to server socket!");
             console.log("#### Joining events channel " + loggedinUser.email);
             socket.emit('room', loggedinUser);
         });
-
         if (arg && arg === "send") {
             console.log("##### Connected to server socket!");
             console.log("#### Sending chat event to  " + JSON.stringify(targetUser));
-            var chatObj = {
-                from: $rootScope.chatText,
-                target: targetUser,
-                timestamp: d.getTime()
-            };
-            socket.emit('join', chatObj);
+            socket.emit('join', targetUser);
         } else if (arg && arg === "leave") {
             console.log("#### Leaving room " + email);
             socket.emit('leave', email);
@@ -1038,28 +1018,27 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         }
         socket.on('chatevent', function(data) {
             console.log("####received chat event: " + JSON.stringify(data));
-            if (!DataService.isValidObject(data)) {
+            if (!DataService.isValidObject(data) || !DataService.isValidArray(data.entities)) {
                 console.log("#####received matching event but no data!");
                 return;
-            } else if (UserService.getLoggedIn().email === data.target.email) {
+            } else if (UserService.getLoggedIn().email === data.entities[0].email) {
                 console.log("#####received chat event sent to me!");
-                //console.log("#####lastUUID for HandleEvent=" + $rootScope.lastUUID + " and entity uuid=" + data.entities[0].uuid);
-                if ($rootScope.lastUUID === data.timestamp) {
+                console.log("#####lastUUID for HandleEvent=" + $rootScope.lastUUID + " and entity uuid=" + data.entities[0].uuid);
+                if ($rootScope.lastUUID === data.entities[0].uuid) {
                     console.log("#####Discarding duplicate events");
                 } else {
                     var msg = {
-                        "sentby": JSON.stringify(data.from.sentby).replace(/\"$/, "").replace(/\"/, ""),
-                        "text": JSON.stringify(data.from.text).replace(/\"$/, "").replace(/\"/, ""),
-                        "time": data.from.time
+                        "sentby": JSON.stringify(data.entities[0].sentby).replace(/\"$/, "").replace(/\"/, ""),
+                        "text": JSON.stringify(data.entities[0].text).replace(/\"$/, "").replace(/\"/, "")
                     };
                     console.log("#####received chat event created by someone else! " + JSON.stringify(msg));
                     $rootScope.chatArray.push(msg);
                     $rootScope.secondPersonTextArray.push(msg.text);
-                    $rootScope.targetChatuser = JSON.stringify(data.from.sentby).replace(/\"$/, "").replace(/\"/, "");
+                    $rootScope.targetChatuser = JSON.stringify(data.entities[0].sentbyemail).replace(/\"$/, "").replace(/\"/, "");
                     console.log("chatArray = " + JSON.stringify($rootScope.chatArray));
                     $scope.$apply();
                     //$scope.HandleEvent("Chat Message", msg);
-                    $rootScope.lastUUID = data.timestamp;
+                    $rootScope.lastUUID = data.entities[0].uuid;
                 }
             } else {
                 console.log("#####Received chat event not meant for me!");

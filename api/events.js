@@ -96,6 +96,7 @@ var ug = new usergrid.client({
 });
 var loggedIn = null;
 var onlineUsers = [];
+var lastHeartBeat = null;
 // The API starts here
 // GET /
 var rootTemplate = {
@@ -110,113 +111,7 @@ app.get("/", function(req, resp) {
 });
 // GET
 var userid;
-app.get("/allDeals", function(req, res) {
-    if (loggedIn === null) {
-        logIn(req, res, getallDeals);
-    } else {
-        userid = req.param("userid");
-        getallDeals(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
-var options = {
-    type: "Deals?limit=100",
-    qs: { ql: "user_id='" + userid + "'" }
-};
-//Call request to initiate the API call
-function getallDeals(req, res) {
-    loggedIn.createCollection({ type: "Deals?limit=100" }, function(
-        err,
-        Deals
-    ) {
-        //    loggedIn.createCollection(options, function(err, ngccnotifications) {
-        //  loggedIn.request({ options, function(err, ngccnotifications) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        var allDeals = [];
-        while (Deals.hasNextEntity()) {
-            var aDeals = Deals.getNextEntity().get();
-            allDeals.push(aDeals);
-        }
-        res.jsonp(allDeals);
-    });
-}
-app.get("/onlineusers", function(req, resp) {
-    //    resp.jsonp(rootTemplate);
-    resp.jsonp(onlineUsers);
-});
-var Deals_query = "";
-app.get("/getDeals", function(req, res) {
-    var paramname = req.param("paramname");
-    var paramvalue = req.param("paramvalue");
-    Deals_query = {
-        type: "Deals?limit=100", //Required - the type of collection to be retrieved
-        qs: { ql: paramname + "='" + paramvalue + "'" }
-    };
-    if (paramname === "uuid") {
-        Deals_query = {
-            type: "Deals", //Required - the type of collection to be retrieved
-            uuid: paramvalue
-        };
-    }
-    if (loggedIn === null) {
-        logIn(req, res, getDeals);
-    } else {
-        getDeals(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
 
-function getDeals(req, res) {
-    loggedIn.createCollection(Deals_query, function(err, Deals) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        var allDeals = [];
-        while (Deals.hasNextEntity()) {
-            var aDeals = Deals.getNextEntity().get();
-            allDeals.push(aDeals);
-        }
-        res.jsonp(allDeals);
-    });
-}
-var needs_query = "";
-app.get("/getneeds", function(req, res) {
-    var paramname = req.param("paramname");
-    var paramvalue = req.param("paramvalue");
-    var emergency = req.param('emergency');
-    needs_query = {
-        type: "needs?limit=500", //Required - the type of collection to be retrieved
-        qs: { ql: paramname + "='" + paramvalue + "'" + " and emergency=" + emergency }
-    };
-    if (paramname === "uuid") {
-        Deals_query = {
-            type: "needs", //Required - the type of collection to be retrieved
-            uuid: paramvalue
-        };
-    }
-    if (loggedIn === null) {
-        logIn(req, res, getneeds);
-    } else {
-        getneeds(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
-
-function getneeds(req, res) {
-    loggedIn.createCollection(needs_query, function(err, needs) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        var allneeds = [];
-        while (needs.hasNextEntity()) {
-            var aneed = needs.getNextEntity().get();
-            allneeds.push(aneed);
-        }
-        res.jsonp(allneeds);
-    });
-}
 var group_query = "";
 app.get("/getusersingroup", function(req, res) {
     var group = req.param("group");
@@ -240,35 +135,7 @@ function getusersingroup(req, res) {
         }
     });
 }
-app.get("/allusers", function(req, res) {
-    if (loggedIn === null) {
-        logIn(req, res, getAllUsers);
-    } else {
-        //userid = req.param("userid");
-        getAllUsers(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
 
-//Call request to initiate the API call
-function getAllUsers(req, res) {
-    loggedIn.createCollection({ type: "users?limit=100" }, function(
-        err,
-        users
-    ) {
-        //    loggedIn.createCollection(options, function(err, ngccnotifications) {
-        //  loggedIn.request({ options, function(err, ngccnotifications) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        var allUsers = [];
-        while (users.hasNextEntity()) {
-            var aUser = users.getNextEntity().get();
-            allUsers.push(aUser);
-        }
-        res.jsonp(allUsers);
-    });
-}
 app.get("/getgroupbyname", function(req, res) {
     var group = req.param("group");
     group_query = {
@@ -307,135 +174,7 @@ app.get('/personality', function(req, res) {
                 res.jsonp(response);
         });
 });
-app.get("/getgroupsforuser", function(req, res) {
-    var uuid = req.param("uuid");
-    group_query = {
-        method: "GET",
-        endpoint: "users/" + uuid + "/groups"
-    };
-    if (loggedIn === null) {
-        logIn(req, res, getgroupsforuser);
-    } else {
-        getgroupsforuser(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
 
-function getgroupsforuser(req, res) {
-    loggedIn.request(group_query, function(err, groups) {
-        if (err) {
-            res.send("ERROR - " + JSON.stringify(err));
-        } else {
-            res.send(groups.entities);
-        }
-    });
-}
-
-function getgroupsforuser2(req, res) {
-    loggedIn.request(group_query, function(err, groups) {
-        if (err) {
-            console.log("ERROR - " + JSON.stringify(err));
-        } else {
-            console.log(groups.entities);
-            allgroups = groups;
-        }
-    });
-}
-app.get("/deletegroupforuser", function(req, res) {
-    var uuid = req.param("uuid");
-    var group = req.param("group");
-    group_query = {
-        method: "DELETE",
-        endpoint: "groups/" + group + "/users/" + uuid
-    };
-    if (loggedIn === null) {
-        logIn(req, res, deletegroupforuser);
-    } else {
-        deletegroupforuser(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
-
-function deletegroupforuser(req, res) {
-    loggedIn.request(group_query, function(err, groups) {
-        if (err) {
-            res.send("ERROR - " + JSON.stringify(err));
-        } else {
-            res.send(groups.entities);
-        }
-    });
-}
-var gcmids_query = "";
-var gcmid = "";
-app.get("/attachgcmidtouser", function(req, res) {
-    gcmid = req.param("gcmid");
-    var uuid = req.param("uuid");
-    gcmids_query = {
-        type: "user",
-        uuid: req.param("uuid")
-    };
-    if (loggedIn === null) {
-        logIn(req, res, attachgcmidtouser);
-    } else {
-        attachgcmidtouser(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
-
-function attachgcmidtouser(req, res) {
-    loggedIn.getEntity(gcmids_query, function(err, entity) {
-        if (err) {
-            res.send("ERROR");
-        } else {
-            //  res.send(entity);
-            var gcm_ids = [];
-            if ("gcm_ids" in entity._data) gcm_ids = entity._data.gcm_ids;
-            //            res.send(gcm_ids);
-            //            return;
-            if (gcm_ids.indexOf(gcmid) > -1) {
-                res.send("SUCCESS");
-                return;
-            }
-            gcm_ids.push(gcmid);
-            entity.set("gcm_ids", gcm_ids);
-            entity.save(function(err) {
-                if (err) {
-                    res.jsonp(500, "ERROR");
-                    return;
-                }
-                res.send(gcm_ids);
-            });
-        }
-    });
-}
-var detach_query = "";
-app.get("/detachgcmidsfromuser", function(req, res) {
-    detach_query = {
-        type: "user",
-        uuid: req.param("uuid")
-    };
-    if (loggedIn === null) {
-        logIn(req, res, detachgcmidsfromuser);
-    } else {
-        detachgcmidsfromuser(req, res);
-    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-});
-
-function detachgcmidsfromuser(req, res) {
-    loggedIn.getEntity(detach_query, function(err, entity) {
-        if (err) {
-            res.send("ERROR");
-        } else {
-            //  res.send(entity);
-            var gcm_ids = [];
-            entity.set("gcm_ids", gcm_ids);
-            entity.save(function(err) {
-                if (err) {
-                    res.jsonp(500, "ERROR");
-                    return;
-                }
-                res.send("SUCCESS " + gcm_ids);
-            });
-        }
-    });
-}
 app.get("/updateuser", function(req, res) {
     if (loggedIn === null) {
         logIn(req, res, updateuser);
@@ -506,353 +245,7 @@ function updateusersettings(req, res) {
         }
     });
 }
-var uuid = "";
-var updateoptions = "";
-var receiver = {};
-var acceptoptions = "";
-app.get("/acceptdonation", function(req, res) {
-    uuid = req.param("uuid");
-    receiver = {
-        receiver_name: req.param("receiver_name"),
-        receiver_phone: req.param("receiver_phone"),
-        receiver_email: req.param("receiver_email"),
-        receiver_uuid: req.param("receiver_uuid"),
-        received_time: req.param("received_time")
-    };
-    updateoptions = {
-        receiver: receiver,
-        status: "Accepted"
-    };
-    var acname = uuid + req.param("receiver_email");
-    acceptoptions = {
-        donationid: uuid,
-        name: acname,
-        receiver: receiver,
-        status: "Accepted"
-    }; //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-    /*    if (loggedIn === null) {
-            logIn(req, res, updatecount);
-          } else {
-            userid = req.param('userid');
-            updatecount(req, res);
-          }*/
-    if (
-        loggedIn === null
-    ) {
-        logIn(req, res, function() {
-            //    acceptdonation(acceptoptions,updateoptions, req, res);
-            acceptdonation(uuid, req, res);
-        });
-    } else {
-        //acceptdonation(acceptoptions,updateoptions, req, res);
-        acceptdonation(uuid, req, res);
-    }
-});
 
-function acceptdonation(uuid, req, res) {
-    var opt = {
-        type: "Deals", //Required - the type of collection to be retrieved
-        uuid: uuid
-    };
-    loggedIn.getEntity(opt, function(err, Deals) {
-        //    loggedIn.createCollection(options, function(err, ngccnotifications) {
-        //  loggedIn.request({ options, function(err, ngccnotifications) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        //        res.send(Deals._data.passengers.length);
-        //        return;
-        Deals.set("receiver", receiver);
-        Deals.set("status", req.param("status"));
-        Deals.save(function(err) {
-            if (err) {
-                //error - user not updated
-                //  res.jsonp(500, {'error': JSON.stringify(err) });
-                res.send("Damn! Error Saving Object!");
-                return;
-            } else {
-                //success - user updated
-                res.jsonp(Deals);
-            }
-        });
-    });
-}
-var aDeals_query = "";
-app.get("/acceptedDeals", function(req, res) {
-    var email = req.param("email");
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            acceptedDeals(email, req, res);
-        });
-    } else {
-        acceptedDeals(email, req, res);
-    }
-});
-
-function acceptedDeals(email, req, res) {
-    var opt = {
-        type: "Deals",
-        qs: { ql: "status='ACCEPTED' && receiver.receiver_email='" + email + "'" }
-    };
-    loggedIn.createCollection(opt, function(err, Deals) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        //        res.jsonp(Deals._list[0]._data.passengers);
-        //        return;
-        var accepted_Deals = [];
-        if (!Deals._list || Deals._list.length === 0) {
-            res.send("You Have No Accepted Deals.");
-            return;
-        } else {
-            for (var i = 0; i < Deals._list.length; i++) {
-                accepted_Deals.push(Deals._list[i]);
-            }
-        }
-        if (accepted_Deals && accepted_Deals.length > 0)
-            res.send(accepted_Deals);
-        else res.send("You Have No Accepted Deals.");
-    });
-}
-var aDeals_query = "";
-app.get("/getpassengersfordonation", function(req, res) {
-    var uuid = req.param("uuid");
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            getpassengersfordonation(uuid, req, res);
-        });
-    } else {
-        getpassengersfordonation(uuid, req, res);
-    }
-});
-
-function getpassengersfordonation(uuid, req, res) {
-    var query = {
-        type: "Deals",
-        uuid: uuid
-    };
-    loggedIn.getEntity(query, function(err, entity) {
-        if (err) {
-            res.send("ERROR");
-        } else {
-            res.send(entity._data.passengers);
-            return;
-        }
-    });
-}
-var aDeals_query = "";
-app.get("/getgcmidsbyuser", function(req, res) {
-    var uuid = req.param("uuid");
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            getgcmidsbyuser(uuid, req, res);
-        });
-    } else {
-        getgcmidsbyuser(uuid, req, res);
-    }
-});
-
-function getgcmidsbyuser(uuid, req, res) {
-    var query = {
-        type: "user",
-        uuid: uuid
-    };
-    loggedIn.getEntity(query, function(err, entity) {
-        if (err) {
-            res.send("ERROR");
-        } else {
-            res.send(entity._data.gcm_ids);
-            return;
-        }
-    });
-}
-var aDeals_query = "";
-app.get("/getuserbyuuid", function(req, res) {
-    var uuid = req.param("uuid");
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            getuserbyuuid(uuid, req, res);
-        });
-    } else {
-        getuserbyuuid(uuid, req, res);
-    }
-});
-
-function getuserbyuuid(uuid, req, res) {
-    var query = {
-        type: "user",
-        uuid: uuid
-    };
-    loggedIn.getEntity(query, function(err, entity) {
-        if (err) {
-            res.send("ERROR");
-        } else {
-            res.send(entity._data);
-            return;
-        }
-    });
-}
-app.get("/canceloffer", function(req, res) {
-    var uuid = req.param("uuid");
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            canceloffer(uuid, req, res);
-        });
-    } else {
-        canceloffer(uuid, req, res);
-    }
-});
-
-function canceloffer(uuid, req, res) {
-    var opt = {
-        type: "Deals",
-        uuid: uuid
-    };
-    loggedIn.getEntity(opt, function(err, o) {
-        if (err) {
-            res.jsonp(500, { error: JSON.stringify(err) });
-            return;
-        }
-        o.destroy(function(err) {
-            if (err) {
-                res.send("Could not cancel offer");
-            } else {
-                //success - user deleted from database
-                o = null; //blow away the local object
-                res.send("Successfully Cancelled Offered donation.");
-            }
-        });
-    });
-}
-app.get("/cancelaccepteddonation", function(req, res) {
-    var uuid = req.param("uuid");
-    var receiver_email = req.param("receiver_email");
-    updateoptions = {
-        type: "Deals", //Required - the type of collection to be retrieved
-        uuid: uuid
-    };
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            canceldonation(receiver_email, updateoptions, req, res);
-        });
-    } else {
-        canceldonation(receiver_email, updateoptions, req, res);
-    }
-});
-
-function canceldonation(e, updateoptions, req, res) {
-    loggedIn.getEntity(updateoptions, function(err, o) {
-        if (err) {
-            res.jsonp(500, err);
-            return;
-        }
-        if (o._data.receiver.receiver_email === e) {
-            o.set("receiver", "");
-            o.set("status", "OFFERED");
-        }
-        o.save(function(err) {
-            if (err) {
-                //             res.jsonp(500, err);
-                res.send("Could not update status to cancelled");
-                return;
-            } else {
-                res.jsonp(o);
-            }
-        });
-    });
-}
-app.post("/createDeals", function(req, res) {
-    var b = req.body;
-    b.name = req.body.email + "-" + req.param("time");
-    /*var e = {
-        name: name,
-        offeredby: req.param("offeredby"),
-        from_place: req.param("from_place"),
-        city: req.param("city"),
-        address: req.param("address"),
-        phone_number: req.param("phone_number"),
-        email: req.param("email"),
-        currentcount: "0",
-        itemtype: req.param("itemtype"),
-        fa_icon: req.param('fa_icon'),
-        items: req.param("items"),
-        status: "OFFERED",
-        time: req.param("time"),
-        location: { latitude: req.param("latitude"), longitude: req.param("longitude") }
-    };*/
-    console.log("##### createDeals - " + JSON.stringify(b));
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            createDeals(b, req, res);
-        });
-    } else {
-        createDeals(b, req, res);
-    }
-});
-
-function createDeals(e, req, res) {
-    var opts = {
-        type: "Deals"
-            //        name: 'Dominos'
-    };
-    loggedIn.createEntity(opts, function(err, o) {
-        if (err) {
-            res.send(err);
-            return;
-        }
-        o.set(e);
-        o.save(function(err) {
-            if (err) {
-                res.send(err);
-                return;
-            }
-            res.send("OFFER CREATED");
-        });
-    });
-}
-app.post("/createneed", function(req, res) {
-    var b = req.body;
-    b.name = req.body.email + "-" + req.param("time");
-    console.log("Create Need Body=" + JSON.stringify(b));
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            createneed(b, req, res);
-        });
-    } else {
-        createneed(b, req, res);
-    }
-});
-
-function createneed(e, req, res) {
-    var opts = {
-        type: "needs"
-            //        name: 'Dominos'
-    };
-    loggedIn.createEntity(opts, function(err, o) {
-        if (err) {
-            res.send(err);
-            return;
-        }
-        o.set(e);
-        o.save(function(err) {
-            if (err) {
-                res.send(err);
-                return;
-            }
-            /*if (mysocket) {
-                console.log("##### Sending emergency event object");
-                //mysocket.broadcast.emit('emergencydata', o);
-                io.sockets.emit('emergencydata', o);
-                console.log("#### Sent event emergencydata");
-            } else {
-                console.log("#### mysocket is null");
-            }*/
-            res.send("NEED CREATED");
-        });
-    });
-}
 app.post("/createevent", function(req, res) {
     var t = new Date();
     req.body.name = req.body.email + "-" + t;
@@ -982,339 +375,7 @@ function createcontactusquery(e, req, res) {
         });
     });
 }
-app.get("/connectentities", function(req, res) {
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            connectentities(req, res);
-        });
-    } else {
-        connectentities(req, res);
-    }
-});
 
-function connectentities(req, res) {
-    var connecting_entity_options = {
-        client: loggedIn,
-        data: {
-            type: 'groups',
-            uuid: req.param('uuid1')
-        }
-    };
-    var connecting_entity = new usergrid.entity(connecting_entity_options);
-    // create an entity object that models the entity being connected to
-    var connected_entity_options = {
-        client: loggedIn,
-        data: {
-            type: 'donationevents',
-            uuid: req.param('uuid2')
-        }
-    };
-    var connected_entity = new usergrid.entity(connected_entity_options);
-    // the connection type
-    var relationship = 'matches';
-    // send the POST request
-    connecting_entity.connect(relationship, connected_entity, function(error, result) {
-        if (error) {
-            console.log("Error connecting entities - " + error);
-        } else {
-            // Success
-            console.log("Success connecting entities");
-            res.jsonp(result);
-        }
-    });
-}
-app.get("/getconnectionsforgroup", function(req, res) {
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            getconnectionsforgroup(req, res);
-        });
-    } else {
-        getconnectionsforgroup(req, res);
-    }
-});
-
-function getconnectionsforgroup(req, res) {
-
-    // create an Usergrid.Entity object that models the entity to retrieve connections for
-    var options = {
-        client: loggedIn,
-        data: {
-            type: 'groups',
-            uuid: req.param('uuid')
-        }
-    };
-    try {
-        var entity = new usergrid.entity(options);
-    } catch (error) {
-        console.log("Error fetching connections - " + JSON.stringify(error));
-        return;
-    }
-    // the connection type you want to retrieve
-    var relationship = 'matches';
-    // initiate the GET request
-    entity.getConnections(relationship, function(error, result) {
-        if (error) {
-            // Error
-            console.log("Error fetching connections - " + JSON.stringify(error));
-        } else {
-            // Success
-            console.log("Success getting connected entities : " + JSON.stringify(result));
-            res.jsonp(result);
-        }
-    });
-}
-var allconnections = [];
-var index = 0;
-var entity = {};
-
-function getconnectionsforgroup2(req, res, uuid, last) {
-
-    if (!uuid) {
-        console.log("getconnectionsforgroup2: No group uuid received");
-        return;
-    }
-
-    var options = {
-        client: loggedIn,
-        data: {
-            type: 'groups',
-            uuid: uuid
-        }
-    };
-    entity = new usergrid.entity(options);
-
-    // the connection type you want to retrieve
-    var relationship = 'matches';
-    // initiate the GET request
-    entity.getConnections(relationship, function(error, result) {
-        if (error) {
-            // Error
-            console.log("Error fetching connections - " + JSON.stringify(error));
-        } else {
-            // Success
-            console.log("Success getting connected entity for group id " + uuid);
-
-            //console.log(JSON.stringify(result));
-            if (result.entities && result.entities.length > 0)
-                allconnections = allconnections.concat(result.entities);
-        }
-    });
-    if (last) {
-        setTimeout(function() {
-            console.log("All Events: " + JSON.stringify(allconnections));
-            res.jsonp(allconnections);
-        }, 5000)
-    }
-}
-
-app.get("/geteventsforuser", function(req, res) {
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            geteventsforuser(req, res);
-        });
-    } else {
-        geteventsforuser(req, res);
-    }
-});
-
-function geteventsforuser(req, res) {
-
-    // create an Usergrid.Entity object that models the entity to retrieve connections for
-    var uuid = req.param("uuid");
-    allconnections = [];
-    allgroups = [];
-    index = 0;
-    group_query = {
-        method: "GET",
-        endpoint: "users/" + uuid + "/groups"
-    };
-    loggedIn.request(group_query, function(err, groups) {
-
-        if (err) {
-            console.log("ERROR - " + JSON.stringify(err));
-            return;
-        } else {
-            var uuids = [];
-            if (!groups || !groups.entities || groups.entities.length == 0) {
-                console.log("No subscribed event groups found");
-                res.jsonp("No Groups Found");
-                return;
-            }
-            console.log("Found " + groups.entities.length + " subscriptions.");
-            var query = '';
-            for (var i = 0; i < groups.entities.length; i++) {
-                uuids.push(groups.entities[i].uuid);
-                query += "group_uuid = '" + groups.entities[i].uuid + "'";
-                if (i < (groups.entities.length - 1))
-                    query += " or ";
-            }
-            // geteventsforgroups(req, res, uuids);
-            console.log("geteventsforuser query = " + query);
-            var options2 = {
-                type: "donationevents?limit=100",
-                qs: {
-                    ql: query
-                }
-            };
-            if (loggedIn === null) {
-                logIn(req, res, function() {
-                    geteventsforuser(req, res);
-                });
-            } else {
-                loggedIn.createCollection(options2, function(err, events) {
-                    if (err) {
-                        res.jsonp(e);
-                        return;
-                    }
-                    var allevents = [];
-                    while (events.hasNextEntity()) {
-                        var aevent = events.getNextEntity().get();
-                        allevents.push(aevent);
-                    }
-                    res.jsonp(allevents);
-                });
-            }
-        }
-    });
-}
-var geo_query = "";
-app.get("/vicinityquery", function(req, res) {
-    var criteria =
-        "location within " +
-        req.param("radius") +
-        " of " +
-        req.param("latitude") +
-        ", " +
-        req.param("longitude");
-    var count = 100;
-    if (req.param("nearest") == "") {
-        count = 100;
-    } else {
-        count = req.param("nearest");
-    }
-    var type = req.param("type");
-    if (!type || type === 'deals') {
-        geo_query = {
-            type: "Deals?limit=" + count, //Required - the type of collection to be retrieved
-            //		qs:criteria
-            //        qs: {"ql": "location within 500 of 51.5183638, -0.1712939000000233"}
-            qs: { ql: criteria }
-        };
-    } else if (type && type === 'needs') {
-        geo_query = {
-            type: "needs?limit=" + count, //Required - the type of collection to be retrieved
-            //		qs:criteria
-            //        qs: {"ql": "location within 500 of 51.5183638, -0.1712939000000233"}
-            qs: { ql: criteria + " and not (emergency = 'YES' or emergency = true)" }
-        };
-    } else if (type && type === 'emergency') {
-        geo_query = {
-            type: "needs?limit=" + count, //Required - the type of collection to be retrieved
-            //		qs:criteria
-            //        qs: {"ql": "location within 500 of 51.5183638, -0.1712939000000233"}
-            qs: { ql: criteria + " and (emergency = true or emergency = 'YES')" }
-        };
-        console.log("Emergency Query = " + geo_query);
-    } else {
-        res.jsonp("Invalid Type - must be offers or needs");
-        return;
-    }
-    if (loggedIn === null) {
-        logIn(req, res, getDealsbylocation);
-    } else {
-        //      userid = req.param('userid');
-        //      alert("Calling getDealsbylocation');
-        getDealsbylocation(req, res);
-    }
-});
-
-function getDealsbylocation(req, res) {
-    loggedIn.createCollection(geo_query, function(err, Deals) {
-        if (err) {
-            res.jsonp(500, { getDealsbylocation_error: JSON.stringify(err) });
-            return;
-        }
-        var allDeals = [];
-        while (Deals.hasNextEntity()) {
-            var arow = Deals.getNextEntity().get();
-            /*          var e = { 'ID': arow.uuid,
-                              		'name': arow.name,
-                                      'street': arow.street,
-                                      'address_line2': arow.address_line2,
-                                      'city': arow.city,
-                                     	'country': arow.country,
-                                     'phone': arow.phone,
-                                     'email': arow.email,
-                  			'Roommate': arow.roommate,
-                  			'Movie': arow.movie,
-                  			'Travel': arow.travel,
-                  			'Room': arow.room,
-                  			'EatOut': arow.eatout,
-                  			'Hiking': arow.hiking,
-                                     'Created': deal.created};*/
-            allDeals.push(arow);
-        }
-        res.jsonp(allDeals);
-    });
-}
-app.post("/creategroup", function(req, res) {
-    var group = req.body.group;
-    if (group)
-        group = group.trim().toUpperCase().replace(/ /g, "-");
-    console.log("Creating Group: " + group);
-    var options = {
-        method: "POST",
-        endpoint: "groups",
-        body: {
-            path: group,
-            name: group
-        }
-    };
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            createGroup(options, req, res);
-        });
-    } else {
-        createGroup(options, req, res);
-    }
-});
-
-function createGroup(e, req, res) {
-    loggedIn.request(e, function(err, data) {
-        if (err) {
-            res.send(err);
-        } else {
-            res.send(201);
-        }
-    });
-}
-app.get("/addusertogroup", function(req, res) {
-    var group = req.param("group");
-    var user = req.param("user");
-    if (group)
-        group = group.trim().toUpperCase().replace(/ /g, "-");
-    var options = {
-        method: "POST",
-        endpoint: "groups/" + group + "/users/" + user
-    };
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            addUserToGroup(options, req, res);
-        });
-    } else {
-        addUserToGroup(options, req, res);
-    }
-});
-
-function addUserToGroup(e, req, res) {
-    loggedIn.request(e, function(err, data) {
-        if (err) {
-            res.send(err);
-        } else {
-            res.send(data);
-        }
-    });
-}
 app.post("/createuser", function(req, res) {
     var fullname = req.body.fullname;
     var password = req.body.password;
@@ -1498,42 +559,6 @@ function getuserafterauth(e, req, res) {
     });
 }
 
-app.get("/verifyresettoken", function(req, res) {
-    if (loggedIn === null) {
-        logIn(req, res, verifyresettoken);
-    } else {
-        verifyresettoken(req, res);
-    }
-});
-
-function verifyresettoken(req, res) {
-    var option = {
-        type: "users",
-        name: req.param("email")
-    };
-    loggedIn.getEntity(option, function(err, entity) {
-        // encryptedPw = encryptPassword(req.param('password'));
-        if (err) {
-            res.send("ERROR");
-        } else {
-            console.log("verifyresettoken: entity = " + JSON.stringify(entity));
-            var resettoken = entity.get("resettoken");
-
-            console.log("ResetToken = " + resettoken);
-            if (resettoken === req.param('token')) {
-                console.log("Password reset token matched successfully");
-                res.send("Please follow the following link to set a new password: " + BASEGUIURL + "#updatepassword");
-                return;
-            } else {
-                console.log("Password reset token NOT matched");
-                res.send("FAIL");
-                return;
-            }
-        }
-    });
-
-}; //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
-
 app.get("/sendresetpwmail", function(req, res) {
 
     if (loggedIn === null) {
@@ -1665,23 +690,6 @@ function logIn(req, res, next) {
     });
 }
 
-function removeOfflineUsersFromList() {
-    console.log("Checking for offline users.....");
-    var time = new Date();
-    if (onlineUsers && onlineUsers.length > 0) {
-        for (i = 0; i < onlineUsers.length; i++) {
-            console.log("OnlineUsers = " + JSON.stringify(onlineUsers[i]));
-            if (Math.abs((Date.parse(onlineUsers[i].lastHeartBeat) - time.getTime()) / 1000) > 60) {
-                console.log(onlineUsers[i].email + " has not pinged lately. Removing from online list.....");
-                onlineUsers.splice(i, 1);
-            }
-        }
-    }
-
-    console.log("#### Broadcasting latest Online Users List.." + JSON.stringify(onlineUsers));
-    io.emit('activeuserschanged', JSON.stringify(onlineUsers));
-}
-
 function expireToken() {
     console.log("Getting rid of user authentication token");
     if (loggedIn !== null) {
@@ -1698,6 +706,48 @@ http.listen(PORT, function() {
     console.log('listening on *:' + PORT);
 });
 setInterval(removeOfflineUsersFromList, 20000);
+
+function sendActiveUsers() {
+    var activeUsersObj = {}
+    activeUsersObj.timestamp = new Date();
+    activeUsersObj.users = onlineUsers;
+    io.emit('activeuserschanged', JSON.stringify(activeUsersObj));
+}
+
+function removeOfflineUsersFromList() {
+    console.log("Checking for offline users.....");
+    var time = new Date();
+    if (onlineUsers && onlineUsers.length > 0) {
+        for (i = 0; i < onlineUsers.length; i++) {
+            console.log("OnlineUsers = " + JSON.stringify(onlineUsers[i]));
+            console.log("##### Difference from last ping time for " + onlineUsers[i].fullname + " is: " +
+                Math.abs((Date.parse(onlineUsers[i].lastHeartBeat) - time.getTime()) / 1000));
+            if (Math.abs((Date.parse(onlineUsers[i].lastHeartBeat) - time.getTime()) / 1000) > 60) {
+                console.log(onlineUsers[i].email + " has not pinged lately. Removing from online list.....");
+                onlineUsers.splice(i, 1);
+                //onlineUsers[i].status = "Offline";
+            }
+        }
+    }
+
+    console.log("#### Broadcasting latest Online Users List.." + JSON.stringify(onlineUsers));
+    //io.emit('activeuserschanged', JSON.stringify(onlineUsers));
+    sendActiveUsers();
+}
+
+function isUserOnline(email) {
+    var online = false;
+    if (onlineUsers && onlineUsers.length > 0) {
+        for (i = 0; i < onlineUsers.length; i++) {
+            if (onlineUsers[i].email === email) {
+                online = true;
+                break;
+            }
+        }
+    }
+    //console.log("@@@@ isUserOnline " + email + ":" + online);
+    return online;
+}
 io.on('connection', function(socket) {
     mysocket = socket;
     socket.on('room', function(loggedinUser) { //login
@@ -1705,51 +755,42 @@ io.on('connection', function(socket) {
             console.log("####Ignoring null or undefined login time join request");
             return;
         }
-        //console.log("####Conecting client socket to room " + loggedinUser.email);
-        socket.join(loggedinUser.email);
-        var online = false;
-        if (onlineUsers && onlineUsers.length > 0) {
-            for (i = 0; i < onlineUsers.length; i++) {
-                if (onlineUsers[i].email === loggedinUser.email) {
-                    online = true;
-                    break;
-                }
-            }
-        }
-        //removeOfflineUsersFromList();
-        if (!online) {
+        if (!isUserOnline(loggedinUser.email)) {
+            //console.log("####Conecting client socket to room " + loggedinUser.email);
+            socket.join(loggedinUser.email);
+            //removeOfflineUsersFromList();
+            loggedinUser.status = "Online";
             onlineUsers.push(loggedinUser);
-            console.log("#### Online now - " + JSON.stringify(loggedinUser));
-            io.emit('activeuserschanged', loggedinUser.email);
+            console.log("#### Online now - " + JSON.stringify(onlineUsers));
+            //io.emit('activeuserschanged', JSON.stringify(onlineUsers));           
         }
+        sendActiveUsers();
     });
     socket.on('join', function(chatObj) { //login
-        if (!chatObj || !chatObj.target || chatObj.target == undefined) {
+        if (!chatObj || chatObj == undefined) {
             console.log("####Ignoring null or undefined join request");
             return;
         } else {
             console.log("####Checking if target user " + JSON.stringify(chatObj) + " is online.")
         }
-        if (onlineUsers && onlineUsers.length > 0) {
-            var online = false;
-            for (i = 0; i < onlineUsers.length; i++) {
-                if (onlineUsers[i].email === chatObj.target.email) {
-                    online = true;
-                    break;
-                }
-            }
-            if (!online) {
-                console.log("####Cannot join room " + chatObj.target.email + ", seems offline");
-                socket.emit('offline', chatObj.target.email);
-            } else {
-                console.log("####Joining room " + chatObj.target.email);
-                socket.join(chatObj.target.email);
-                io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
-                //io.sockets.emit('matchingevent', data);
-                console.log("####Sent chatevent to email " + chatObj.target.email);
-                console.log("#####Event Object = " + JSON.stringify(chatObj));
-            }
+        console.log("####Joining room " + chatObj.target.email);
+        socket.join(chatObj.target.email);
+        io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
+        console.log("#####Event Object = " + JSON.stringify(chatObj));
+
+    });
+    socket.on('sendchat', function(chatObj) { //login
+        if (!chatObj || chatObj == undefined) {
+            console.log("####Ignoring null or undefined join request");
+            return;
+        } else {
+            console.log("####Checking if target user " + JSON.stringify(chatObj) + " is online.")
         }
+        //console.log("####Joining room " + chatObj.target.email);
+        //socket.join(chatObj.target.email);
+        io.sockets.emit('chateventforall', chatObj);
+        //io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
+        console.log("#####Event Object = " + JSON.stringify(chatObj));
 
     });
     socket.on('leave', function(room) {
@@ -1762,8 +803,9 @@ io.on('connection', function(socket) {
         if (onlineUsers && onlineUsers.length > 0) {
             for (i = 0; i < onlineUsers.length; i++) {
                 if (onlineUsers[i].email === room) {
-                    onlineUsers.splice(i, 1);
-                    console.log("Removed user " + room + "from online list");
+                    //onlineUsers.splice(i, 1);
+                    onlineUsers[i].status = "Offline";
+                    console.log("Set user status for " + room + "to offline");
                 }
             }
         }
@@ -1773,13 +815,21 @@ io.on('connection', function(socket) {
             console.log("####Ignoring null or undefined alive event");
             return;
         }
-        console.log("#### Alive event received for user: " + loggedinUser.email);
+        //console.log("#### Alive event received for user: " + loggedinUser.email);
+        if (loggedinUser.lastHeartBeat === lastHeartBeat) {
+            //console.log("##### Discarding duplicate alive events for " + loggedinUser.email);
+            return;
+        } else {
+            lastHeartBeat = loggedinUser.lastHeartBeat;
+        }
+        loggedinUser.status = "Online";
         //removeOfflineUsersFromList();
         var alreadyInList = false;
         if (onlineUsers && onlineUsers.length > 0) {
             for (i = 0; i < onlineUsers.length; i++) {
                 if (onlineUsers[i].email === loggedinUser.email) {
-                    console.log("User already in alive list");
+                    //console.log("User already in alive list");
+                    onlineUsers[i] = loggedinUser;
                     alreadyInList = true;
                     break;
                 }
@@ -1787,10 +837,9 @@ io.on('connection', function(socket) {
         }
         if (!alreadyInList) {
             onlineUsers.push(loggedinUser);
-            console.log("#### Broadcasting Online Users List");
-            io.emit('activeuserschanged', JSON.stringify(onlineUsers));
-        } else {
-
+            //console.log("#### Broadcasting Online Users List");
+            //io.emit('activeuserschanged', JSON.stringify(onlineUsers));
+            //sendActiveUsers();
         }
     });
     socket.on('logout', function(email) {
@@ -1803,13 +852,15 @@ io.on('connection', function(socket) {
         if (onlineUsers && onlineUsers.length > 0) {
             for (i = 0; i < onlineUsers.length; i++) {
                 if (onlineUsers[i].email === email) {
-                    onlineUsers.splice(i, 1);
-                    console.log("Removed user " + email + " from online list");
+                    //onlineUsers.splice(i, 1);
+                    onlineUsers[i].status = "Offline";
+                    console.log("Set status of " + email + " to offline");
                 }
             }
         }
         console.log("#### Broadcasting logout event for " + email + " for all users to update active user states");
         console.log("#### Online USers after delete: " + JSON.stringify(onlineUsers));
-        io.emit('activeuserschanged', email);
+        //io.emit('activeuserschanged', email);
+        sendActiveUsers();
     });
 });
