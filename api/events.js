@@ -789,9 +789,8 @@ io.on('connection', function(socket) {
         //console.log("####Joining room " + chatObj.target.email);
         //socket.join(chatObj.target.email);
         io.sockets.emit('chateventforall', chatObj);
+        //socket.broadcast.emit('chateventforall', chatObj);
         //io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
-        console.log("#####Event Object = " + JSON.stringify(chatObj));
-
     });
     socket.on('leave', function(room) {
         if (!room || room == undefined) {
