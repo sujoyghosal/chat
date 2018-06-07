@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html ng-app="myApp">
+<html>
 
 <head>
     <title>Chat</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">-->
     <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -17,6 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/6.11.5/sweetalert2.all.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-notification/0.3.6/angular-ui-notification.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/all.js" integrity="sha384-xymdQtn1n3lH2wcu0qhcdaOpQwyoarkgLVxC/wZ5q7h9gHtxICrpcaSUfygqZGOe" crossorigin="anonymous"></script>
     <script src="js/angular-socialshare.min.js"></script>
     <script src="js/angularapp.js"></script>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
@@ -173,7 +174,7 @@
     </script>
 </head>
 
-<body>
+<body ng-app="myApp">
 
     <div ng-controller="ChatCtrl" ng-show="isVisible()" ng-init="eventsCount=0;initApp();">
         <header>
@@ -188,7 +189,7 @@
                           <span class="icon-bar"></span>
                         </button>
                         <div>
-                            <div><a class="navbar-brand" href="#home"><i class="fa fa-home fa-x">Chat <h7 style="color:#F00" ng-show="loggedIn">{{' Welcome ' + username + '!'}}</h7></i></a></div>
+                            <div><a class="navbar-brand" href="#home"><i class="fas fa-home"></i>Chat <p style="color:#F00" ng-show="loggedIn"></p></a></div>
                             <div class="row">
 
                             </div>
@@ -215,11 +216,9 @@
                                 </ul>
                             </li>-->
                             <li class="dropdown" ng-show="loggedIn">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-user fa-2x"></i>Profile</a>
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fas fa-circle fa-2x"></i></a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="#/updateuser "><i class="fa fa-edit fa-x "></i>&nbsp;Update Profile</a></li>
-                                    <li><a href="#/settings "><i class="fa fa-cog fa-x "></i>&nbsp;Settings</a></li>
-                                    <li><a href="#" ng-click="HandleLogout()"><i class="fa fa-sign-out fa-x "></i>&nbsp;Logout</a></li>
+                                    <li><a href="#" ng-click="HandleLogout()"><i class="fas fa-sign-out-alt"></i>&nbsp;Logout</a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -236,7 +235,7 @@
         <div id="account-details"></div>
 
         <div ng-controller="ChatCtrl " class="container ">
-            <div class="col-md-9" ng-show="loggedIn">
+            <div class="col-md-9">
                 <div ng-view></div>
             </div>
         </div>

@@ -16,7 +16,7 @@ app.config([
                 isLogin: true
             })
             .when("/home", {
-                templateUrl: "home.html",
+                templateUrl: "chatbox.html",
                 controller: "ChatCtrl"
             })
             .when("/chat", {
@@ -258,33 +258,35 @@ var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
-//var BASEURL_PERSONAL = "http://localhost:9000";
+
 var BASEURL = BASEURL_PERSONAL;
 var GUIURL = 'https://chatwebsujoy.mybluemix.net';
 //var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
-app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $window, Notification, Socialshare, UserService, DataService) {
+app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $anchorScroll, $window, Notification, Socialshare, UserService, DataService) {
     $scope.spinner = false;
     $scope.alldeals = false;
     $scope.allneeds = false;
     var socket = null;
     var room = null;
-
+    $scope.loading = false;
     $rootScope.username = UserService.getLoggedIn().fullname;
-    $scope.citydeals = "";
+    $scope.users = [];
     $scope.cancel = false;
     $scope.uuid = UserService.getLoggedIn().uuid;
     $scope.lat = "";
     $scope.lng = "";
-    $scope.settings = adjustsettings(UserService.getLoggedIn().settings);
+    $scope.nophoto = false;
+    //$scope.settings = adjustsettings(UserService.getLoggedIn().settings);
     $scope.selectedto = undefined;
     $scope.selectedfrom = undefined;
     $rootScope.login_email = UserService.getLoggedIn().email;
     $scope.login_fullname = UserService.getLoggedIn().fullname;
-    //$scope.login_phone = UserService.getLoggedIn().phone;
+    $scope.showChat = true;
     $scope.found = "";
     $scope.result = "";
+    $scope.errorMsg = "";
     $scope.groupusers = [];
     var param_name = "";
     $scope.offererUUID = "";
@@ -294,7 +296,8 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $rootScope.mobileDevice = false;
     $scope.chatbox = "";
     $rootScope.chatArray = [];
-    //$rootScope.personalitytext = null;
+    $rootScope.onlineUsers = [];
+    $rootScope.personalitytext = null;
     $scope.loading = false;
     $scope.showValues = false;
     $scope.showPersonality = false;
@@ -306,7 +309,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.sampleText = "Your literature review should be appropriate to the kind of paper you are writing. If it is a thesis, you should strive for completeness, both in reviewing all the relevant literature and in making the main arguments clear to a reader who is unfamiliar with that literature. For a course paper or journal article, it is sufficient to review the main papers that are directly relevant. Again, you should assume that your reader has not read them, but you need not go into detail. You should review only those points that are relevant to the arguments you will make. Do not say that ``X found Y'' or ``demonstrated'' if X's conclusions don't follow from X's results. You can use words like ``X claimed to show that Y'' or ``suggested that'' when you are not sure. If you see a flaw, you can add, ``However ...''. Try to avoid expressions like ``Unfortunately, Smith and Jones neglected to examine [precisely what you are examining].'' It might have been unfortunate for them or for the field, but it is fortunate for you, and everyone knows it.";
     $scope.events = [];
     $scope.timeout = null;
-    //$rootScope.allusers = [];
+    var lastHeartBeat = null;
+    var lasTimeStamp = null;
+    $scope.showDropdown = false;
     $rootScope.secondPersonTextArray = [];
     var today = new Date().toISOString().slice(0, 10);
     $rootScope.lastUUID = "";
@@ -367,11 +372,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             console.error("##### Problem logging user out " + JSON.stringify(error));
         });
         console.log("Logout: Set logged in status = " + UserService.getLoggedInStatus());
+        $scope.StopTimer();
         $location.path("/home");
         return;
     });
     $rootScope.$on("alive", function() {
-        console.log("####Sending logout event to server for broadcasting....");
+        //console.log("####Sending heartbeat event to server for broadcasting....");
         $scope.setupWebSockets(UserService.getLoggedIn().email, 'alive');
         return;
     });
@@ -380,7 +386,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         if (!UserService.getLoggedInStatus() && ("/login" === $location.path() || "/chat" === $location.path() ||
                 "/subscribe" === $location.path() || "/notifications" === $location.path() || "/personality" === $location.path() ||
                 "/updatepassword" === $location.path() || "/createneed" === $location.path() ||
-                "/createemergency" === $location.path() || "/offershistory" === $location.path())) {
+                "/offershistory" === $location.path())) {
             //console.log("User not logged in for access to " + $location.path());
             /* You can save the user's location to take him back to the same page after he has logged-in */
             $rootScope.savedLocation = $location.path();
@@ -587,10 +593,15 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         $scope.stackicon = icon + ' fa-stack-1x';
         return icon + ' fa-stack-1x';
     }
-    $scope.StartChat = function(chat) {
-        //alert(chat.targetuser);
-        $rootScope.targetChatuser = chat.targetuser;
-        var user = $scope.GetUserFromEmail(chat.targetuser);
+    $scope.StartChat = function(user) {
+        //alert(JSON.stringify(user));
+        $rootScope.targetChatuser = user;
+        $scope.showChat = false;
+        if ($scope.showDropdown)
+            $scope.showDropdown = false;
+        else
+            $scope.showDropdown = true;
+        console.log("####Changed Target Chat User: " + JSON.stringify($rootScope.targetChatuser));
     };
     $scope.GetOnlineUsers = function() {
         $scope.loginResult = "";
@@ -634,6 +645,13 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.SendChat = function(chat) {
         $scope.loginResult = "";
         var targetUSerOffline = true;
+        console.log("####Sending chat event to " + JSON.stringify($rootScope.targetChatuser));
+        /*if (!$rootScope.targetChatuser || $rootScope.targetChatuser.length < 2) {
+            console.log("####SendChat -> target user seems offline");
+            Notification.error({ message: "Select an online user from list", positionY: 'bottom', positionX: 'center' });
+            return;
+        }
+        
         for (i = 0; i < $rootScope.onlineUsers.length; i++) {
             var auser = $rootScope.onlineUsers[i];
             if ($rootScope.targetChatuser === auser.email) {
@@ -645,55 +663,32 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             console.log("####SendChat -> target user seems offline");
             Notification.error({ message: "The user seems offline now.", positionY: 'bottom', positionX: 'center' });
             return;
-        }
+        }*/
         var time = new Date();
         time = time.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
         var msg = {
             "sentby": $rootScope.username,
+            "email": UserService.getLoggedIn().email,
             "text": chat.text,
-            "time": time
+            "time": time,
+            "css": {
+                'background-color': "rgb(14, 153, 207)",
+                'border': "1px solid red",
+                'width': "70%"
+            },
+            align: "left"
         };
         $rootScope.chatArray.push(msg);
-
+        $rootScope.chatText = msg;
         $scope.setupWebSockets($rootScope.targetChatuser, 'send');
-        var now = new Date();
-        $scope.loginResult = "Sent Request";
-        var postURL = BASEURL + "/sendchat";
-        var reqObj = {
-            email: $rootScope.targetChatuser,
-            sentby: UserService.getLoggedIn().fullname,
-            sentbyemail: UserService.getLoggedIn().email,
-            time: now,
-            text: chat.text,
-            fa_icon: $scope.GetFontAwesomeIconsForCategory(null)
-        };
-        postURL = encodeURI(postURL);
-        $http.post(postURL, JSON.stringify(reqObj)).then(
-            function successCallback(response) {
-                console.log("Send Chat Response:" + JSON.stringify(response));
-                $scope.loginResult = "Success";
-                //Notification.success({ message: "Good job! Successufully Published Your Chat text. Thank You!", positionY: 'bottom', positionX: 'center' });
-                $scope.spinner = false;
-                $scope.status = "response.statusText";
-                //$scope.$emit("StopTimer", {});
-                //schedulePush(new Date());
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.loginResult = "Error Received from Server.." + error.toString();
-                Notification.error({ message: "Error processing this request. Please try again later!", positionY: 'bottom', positionX: 'center' });
-                $scope.spinner = false;
-                $scope.status = error.statusText;
-            }
-        );
+        $scope.chat.text = null;
     };
     $scope.StartTimer = function() {
-        $scope.timeout = $timeout(function() {
-            console.log("####Sending heartbeat event to server....");
+        $scope.timeout = $interval(function() {
+            console.log("####Sending heartbeat event to server at " + new Date());
             //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
             $rootScope.$emit("alive", {});
-        }, 60000);
+        }, 30000);
 
     }
     $scope.StopTimer = function() {
@@ -835,7 +830,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             method: "GET",
             url: "https://personality-analyser-sujoy.mybluemix.net/personality?text=" + text
         }).then(function mySucces(response) {
-            console.log(JSON.stringify(response));
+            //console.log(JSON.stringify(response));
             $scope.response = response;
             $scope.resultsReady = true;
             $scope.LOL = false;
@@ -859,7 +854,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 // Leave the lines as is for the providers you want to offer your users.
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID,
                 firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-                firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+                //firebase.auth.TwitterAuthProvider.PROVIDER_ID,
                 //    firebase.auth.GithubAuthProvider.PROVIDER_ID,
                 firebase.auth.EmailAuthProvider.PROVIDER_ID,
                 //    firebase.auth.PhoneAuthProvider.PROVIDER_ID
@@ -896,25 +891,31 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     console.log("##### logged in user found");
                     UserService.setLoggedIn(thisUser);
                     $rootScope.loggedIn = true;
-                    $scope.GetUserByEmail(user.email, 'login');
-                    user.getIdToken().then(function(accessToken) {
-                        //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
-                        /*document.getElementById('sign-in').textContent = 'Sign out';
-                        document.getElementById('account-details').textContent = JSON.stringify({
-                            displayName: displayName,
-                            email: email,
-                            emailVerified: emailVerified,
-                            phoneNumber: phoneNumber,
-                            photoURL: photoURL,
-                            uid: uid,
-                            accessToken: accessToken,
-                            providerData: providerData
-                        }, null, '  ');*/
-                    });
-                    $rootScope.$emit("CallSetupWebsocketsMethod", {});
-                    $rootScope.$emit("CallGetOnlineUsersMethod", {});
-                    $rootScope.$emit("CallStartTimerMethod", {});
-                    $rootScope.$emit("NewLogin", {});
+                    $rootScope.login_email = user.email;
+                    //$scope.GetUserByEmail(user.email, 'login');
+                    UserService.setLoggedInStatus(true);
+                    $rootScope.username = user.displayName;
+                    $rootScope.login_email = user.email;
+                    $location.path('/home');
+                    //user.getIdToken().then(function(accessToken) {
+                    //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
+                    /*document.getElementById('sign-in').textContent = 'Sign out';
+                    document.getElementById('account-details').textContent = JSON.stringify({
+                        displayName: displayName,
+                        email: email,
+                        emailVerified: emailVerified,
+                        phoneNumber: phoneNumber,
+                        photoURL: photoURL,
+                        uid: uid,
+                        accessToken: accessToken,
+                        providerData: providerData
+                    }, null, '  ');*/
+                    //});
+                    $rootScope.$emit("CallSetupWebsocketsMethod", null);
+                    $rootScope.$emit("alive", {});
+                    $rootScope.$emit("CallStartTimerMethod", null);
+                    //$rootScope.$emit("CallGetOnlineUsersMethod", {});
+                    //$rootScope.$emit("NewLogin", {});
                 } else {
                     // User is signed out.
                     /*document.getElementById('sign-in-status').textContent = 'Signed out';
@@ -932,6 +933,14 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 console.log(error);
             });
     }
+    $scope.gotoBottom = function() {
+        // set the location.hash to the id of
+        // the element you wish to scroll to.
+        $location.hash('bottom');
+
+        // call $anchorScroll()
+        $anchorScroll();
+    };
     $scope.GetUserByEmail = function(email, context) {
         if (!email) {
             Notification.error({ message: "Email Not Found!", positionY: 'bottom', positionX: 'center' });
@@ -985,27 +994,40 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             }
         );
     };
+    $scope.GetPersonality = function(user) {
+        console.log("#### GetPersonality received input = " + JSON.stringify(user));
+        $scope.showChat = false;
+        $scope.spinner = true;
+        $scope.setupWebSockets(user.email, 'getchats')
+    }
     $scope.setupWebSockets = function(email, arg) {
-        console.log("#####Setting up listener for alerts");
+        //console.log("#####Setting up listener for alerts");
         socket = io.connect(BASEURL);
         var targetUser = {
-            "fullname": $rootScope.targetChatuserName,
-            "email": email
+            fullname: $rootScope.targetChatuserName,
+            email: email
         }
+        var d = new Date();
         var loggedinUser = {
-            "fullname": UserService.getLoggedIn().fullname,
-            "email": UserService.getLoggedIn().email,
-            "photoURL": UserService.getLoggedIn().photoURL
+            fullname: UserService.getLoggedIn().fullname,
+            email: UserService.getLoggedIn().email,
+            photoURL: UserService.getLoggedIn().photoURL,
+            lastHeartBeat: d
         }
         socket.on('connect', function() {
-            console.log("##### Connected to server socket!");
-            console.log("#### Joining events channel " + loggedinUser.email);
+            //console.log("#### Joining events channel " + loggedinUser.email);
             socket.emit('room', loggedinUser);
         });
         if (arg && arg === "send") {
-            console.log("##### Connected to server socket!");
-            console.log("#### Sending chat event to  " + JSON.stringify(targetUser));
-            socket.emit('join', targetUser);
+            var chatObj = {
+                from: $rootScope.chatText,
+                //target: JSON.parse($rootScope.targetChatuser),
+                //target: $rootScope.targetChatuser,
+                timestamp: d.getTime()
+            };
+            console.log("#### Sending chat event to  " + JSON.stringify(chatObj));
+            //socket.emit('join', chatObj);
+            socket.emit('sendchat', chatObj);
         } else if (arg && arg === "leave") {
             console.log("#### Leaving room " + email);
             socket.emit('leave', email);
@@ -1013,53 +1035,119 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             console.log("#### Logging out " + email);
             socket.emit('logout', email);
         } else if (arg && arg === "alive") {
-            console.log("#### Logging out " + email);
             socket.emit('alive', loggedinUser);
+        } else if (arg && arg === "getchats") {
+            console.log("#### Getting all chats for " + email);
+            socket.emit('getchats', email);
         }
-        socket.on('chatevent', function(data) {
-            console.log("####received chat event: " + JSON.stringify(data));
-            if (!DataService.isValidObject(data) || !DataService.isValidArray(data.entities)) {
-                console.log("#####received matching event but no data!");
+        socket.on('chateventsforoneuser', function(data) {
+            $scope.errorMsg = "";
+            console.log("####received chat events for an user" + JSON.stringify(data));
+            if (!data || !DataService.isValidArray(data.events)) {
+                Notification.error({ message: "Could Not Retrieve Chats for User. Please try later!", positionY: 'bottom', positionX: 'center' });
                 return;
-            } else if (UserService.getLoggedIn().email === data.entities[0].email) {
-                console.log("#####received chat event sent to me!");
-                console.log("#####lastUUID for HandleEvent=" + $rootScope.lastUUID + " and entity uuid=" + data.entities[0].uuid);
-                if ($rootScope.lastUUID === data.entities[0].uuid) {
-                    console.log("#####Discarding duplicate events");
-                } else {
-                    var msg = {
-                        "sentby": JSON.stringify(data.entities[0].sentby).replace(/\"$/, "").replace(/\"/, ""),
-                        "text": JSON.stringify(data.entities[0].text).replace(/\"$/, "").replace(/\"/, "")
-                    };
-                    console.log("#####received chat event created by someone else! " + JSON.stringify(msg));
-                    $rootScope.chatArray.push(msg);
-                    $rootScope.secondPersonTextArray.push(msg.text);
-                    $rootScope.targetChatuser = JSON.stringify(data.entities[0].sentbyemail).replace(/\"$/, "").replace(/\"/, "");
-                    console.log("chatArray = " + JSON.stringify($rootScope.chatArray));
-                    $scope.$apply();
-                    //$scope.HandleEvent("Chat Message", msg);
-                    $rootScope.lastUUID = data.entities[0].uuid;
-                }
-            } else {
-                console.log("#####Received chat event not meant for me!");
             }
+            if (data.timestamp == lasTimeStamp) {
+                console.log("####Discarding duplicate chateventsforoneuser events");
+                return;
+            }
+            var userTexts = [];
+            for (i = 0; i < data.events.length; i++) {
+                userTexts.push(data.events[i].from.text);
+            }
+            $scope.personalitytext = JSON.stringify(userTexts);
+            if ($scope.personalitytext && $scope.personalitytext.length < 108) {
+                //Notification.error({ message: "Not enough words in user chat for analysis. Please try later!", positionY: 'bottom', positionX: 'center' });
+                $scope.errorMsg = "Not enough words in user chat for analysis. Please try later!";
+                //return;
+            }
+            lasTimeStamp = data.timestamp;
+            $location.path('/personality');
         });
+
         socket.on('activeuserschanged', function(data) {
-            console.log("##### Received activeuserschanged event with user: " + JSON.stringify(data));
-            /*Notification.info({
-                message: JSON.stringify(data) + " has logged out!",
-                title: "Alert",
-                positionY: 'top',
-                positionX: 'center',
-                delay: 4000,
-                replaceMessage: true
-            });*/
-            $rootScope.$emit("CallGetOnlineUsersMethod", {});
+
+            var b = {
+                email: 'abcd@yahoo.com',
+                fullname: 'ABCD',
+                photoURL: null,
+                lastHeartBeat: new Date()
+            };
+            var activeUsers = JSON.parse(data);
+            if (lastHeartBeat === activeUsers.timestamp) {
+                //console.log("Discarding duplicate activeuserschanged events");
+                return;
+            } else {
+                lastHeartBeat = activeUsers.timestamp;
+                $scope.users = activeUsers.users;
+                for (i = 0; i < $scope.users.length; i++) {
+                    var a = $scope.users[i];
+                    if (a.photoURL == null) {
+                        $scope.nophoto = true;
+                    }
+                }
+                //$scope.users.push(b);
+                //console.log("#### activeuserschanged - current online users are" + JSON.stringify($scope.users));
+                $scope.$apply();
+            }
+
         });
         socket.onclose = function(evt) {
             console.log("##### Received socket onlcose event: " + JSON.stringify(evt));
             //$scope.setupWebSockets('init', null);
         };
+        socket.on('chateventforall', function(data) {
+            console.log("####received chat event for all: " + JSON.stringify(data));
+            if (!DataService.isValidObject(data)) {
+                console.log("#####received matching event but no data!");
+                return;
+            }
+            console.log("#### Checking for email same as loggedInUser email");
+            if (data.from.email === UserService.getLoggedIn().email) {
+                //console.log("#####received matching event but no data!");
+                console.log("#### email same as loggedInUser email");
+                return;
+            }
+            console.log("#### Checking for same timestamp");
+            if ($rootScope.lastUUID === data.timestamp) {
+                console.log("#####Discarding duplicate events");
+                return;
+            } else {
+                var msg = {
+                    sentby: data.from.sentby,
+                    email: data.from.email,
+                    text: data.from.text,
+                    time: data.from.time,
+                    "css": {
+                        'background-color': "greenyellow",
+                        'border': "1px solid red",
+                        'width': "70%"
+                    },
+                    align: "right"
+                };
+                console.log("#####received chat event created by someone else! " + JSON.stringify(msg));
+                $rootScope.chatArray.push(msg);
+                $rootScope.secondPersonTextArray.push(msg.text);
+                //$rootScope.targetChatuser.fullname = JSON.stringify(data.from.sentby).replace(/\"$/, "").replace(/\"/, "");
+                //$rootScope.targetChatuser.email = JSON.stringify(data.target.email).replace(/\"$/, "").replace(/\"/, "");
+                $rootScope.targetChatuser = {
+                        fullname: data.from.sentby,
+                        email: data.from.email,
+                        photoURL: null,
+                        lastHeartBeat: new Date()
+                    }
+                    //$rootScope.targetChatuser = JSON.stringify(t);
+                    //$rootScope.targetChatuser.email = data.from.email;
+                    //console.log("######Current Target USer = " + JSON.stringify($rootScope.targetChatuser));
+                console.log("#####Set new target user as: " + JSON.stringify($rootScope.targetChatuser));
+                $scope.showChat = true;
+                $scope.gotoBottom();
+                $scope.$apply();
+                //$scope.HandleEvent("Chat Message", msg);
+                $rootScope.lastUUID = data.timestamp;
+            }
+
+        });
     }
     $scope.HandleEvent = function(title, text) {
         /*cordova.plugins.notification.local.schedule({
@@ -1522,247 +1610,6 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 $scope.alldeals = false;
             }
         );
-    };
-    $scope.GetNeeds = function(paramname, paramvalue, emergency) {
-        if (!paramvalue || paramvalue.length < 2) {
-            alert("Need " + paramname, "Please provide a valid " + paramname, "warning");
-            return;
-        }
-        $scope.spinner = true;
-        param_name = paramname.trim();
-        var getURL =
-            BASEURL + "/getneeds?paramname=" +
-            param_name +
-            "&paramvalue=" +
-            paramvalue.trim() + "&emergency=" + emergency;
-        getURL = encodeURI(getURL);
-        $http({
-            method: "GET",
-            url: getURL
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                if (!DataService.isValidObject(response) || !DataService.isValidArray(response.data)) {
-
-                    if (DataService.isString(response)) {
-                        console.log("####Invalid response: " + JSON.stringify(response));
-                        Notification.error({ message: "A problem occured!", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-                        return;
-                    } else {
-                        console.log("####Invalid response - null or undefined");
-                        Notification.error({ message: "A problem occured!", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-                        return;
-                    }
-
-                } else {
-                    console.log("Awesome, a valid response!");
-                }
-                $scope.spinner = false;
-                $scope.cityneeds = response.data;
-                //    if (angular.isObject($scope.cityneeds))
-                //       $scope.found = $scope.cityneeds.length + " found";
-                var ONE_DAY = 24 * 60 * 60 * 1000; //ms
-                var filteredNeeds = [];
-                if ($scope.cityneeds && $scope.cityneeds.length > 0) {
-                    for (var i = 0; i < $scope.cityneeds.length; i++) {
-                        var d = new Date();
-                        var o = new Date($scope.cityneeds[i].modified);
-                        if ((d - o) > 7 * ONE_DAY)
-                            continue;
-                        else if (!emergency && $scope.cityneeds[i].email === $scope.login_email)
-                            continue;
-                        else
-                            filteredNeeds.push($scope.cityneeds[i]);
-                    }
-                    //console.log("Filtered " + ($scope.cityneeds.length - filteredNeeds.length) + " old records");
-                    $scope.cityneeds = filteredNeeds;
-                    $scope.found = $scope.cityneeds.length + " found";
-                    if ($scope.cityneeds.length == 0) {
-                        $scope.allneeds = false;
-                        return;
-                    } else {
-                        $scope.allneeds = true;
-                        $scope.cancel = false;
-                    }
-                } else {
-                    $scope.cityneeds = [];
-                    $scope.found = "None found";
-                    $scope.spinner = false;
-                    $scope.alldeals = false;
-                    $scope.allneeds = false;
-                    return;
-                }
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                //      $scope.result = "Could not submit acceptance. " + error;
-                Notification.error({ message: "Error processing this request. Please try again later!", positionY: 'bottom', positionX: 'center' });
-                $scope.alldeals = false;
-            }
-        );
-    };
-    $scope.PopulateDefaultAddress = function() {
-        var obj = UserService.getLoggedIn();
-        $scope.address = JSON.stringify(obj.address);
-    }
-    $scope.OrchestrateGetNearby = function(data, type) {
-        if (!data || !data.searchAddress || data.searchAddress.length < 5) {
-            Notification.error({ message: "Please provide a valid address", positionY: 'bottom', positionX: 'center' });
-            return;
-        }
-        if (!data.distance) {
-            Notification.error({ message: "Please select distance", positionY: 'bottom', positionX: 'center' });
-            return;
-        }
-        $http({
-            method: "GET",
-            url: encodeURI(GEOCODEURL + "&address=" + data.searchAddress)
-        }).then(
-            function mySucces(response) {
-                console.log("URL=" + GEOCODEURL + "&address=" + data.searchAddress);
-                if (!DataService.isValidObject(response) || !DataService.isValidObject(response.data) ||
-                    !DataService.isValidArray(response.data.results)) {
-                    console.log("####Invalid response")
-                    Notification.error({ message: "A problem occured!", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-                    return;
-                } else {
-                    console.log("Awesome, a valid response!");
-                }
-                $scope.geoCodeResponse = response.data;
-                $scope.geocodesuccess = true;
-                data.lat = $scope.geoCodeResponse.results[0].geometry.location.lat;
-                data.lng = $scope.geoCodeResponse.results[0].geometry.location.lng;
-
-                console.log("Geocoding result: " + data.lat + "," + data.lng);
-                $scope.GetNearby(data, type);
-            },
-            function myError(response) {
-                $scope.geoCodeResponse = response.statusText;
-            }
-        );
-    };
-    $scope.GetNearby = function(data, type) {
-        $scope.spinner = true;
-        if (!data.distance) {
-            //alert("Invalid Distance");
-            Notification.error({ message: "Please select distance", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-            return;
-        }
-        if (!type) {
-            //alert("Invalid Type");
-            Notification.error({ message: "Please select Item Type", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-            return;
-        }
-        var getURL =
-            BASEURL + "/vicinityquery?radius=" +
-            data.distance * 1000 + "&latitude=" + data.lat + "&longitude=" + data.lng + "&type=" + type;
-
-        getURL = encodeURI(getURL);
-        console.log("Vicinity Query: " + getURL);
-        $http({
-            method: "GET",
-            url: getURL
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                if (!DataService.isValidObject(response) || !DataService.isValidArray(response.data)) {
-
-                    if (DataService.isString(response)) {
-                        console.log("####Invalid response: " + JSON.stringify(response));
-                        Notification.error({ message: "A problem occured!", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-                        return;
-                    } else {
-                        console.log("####Invalid response - null or undefined");
-                        Notification.error({ message: "A problem occured!", title: "Error", positionY: 'bottom', positionX: 'center', delay: 4000 });
-                        return;
-                    }
-
-                } else {
-                    console.log("Awesome, a valid response!");
-                }
-                $scope.spinner = false;
-                $scope.citydeals = response.data;
-                $scope.cityneeds = response.data;
-                //    if (angular.isObject($scope.citydeals))
-                //       $scope.found = $scope.citydeals.length + " found";
-                //show last 2 days only
-                var ONE_DAY = 24 * 60 * 60 * 1000; //ms
-                var filteredNeeds = [];
-                if ($scope.cityneeds && $scope.cityneeds.length > 0) {
-                    for (var i = 0; i < $scope.cityneeds.length; i++) {
-                        var d = new Date();
-                        var o = new Date($scope.cityneeds[i].modified);
-                        if (((d - o) > 7 * ONE_DAY))
-                            continue;
-                        else if (type != 'emergency' && $scope.cityneeds[i].email === $scope.login_email)
-                            continue;
-                        else
-                            filteredNeeds.push($scope.cityneeds[i]);
-                    }
-                    //console.log("Filtered " + ($scope.cityneeds.length - filteredNeeds.length) + " old records");
-                    $scope.cityneeds = filteredNeeds;
-                    $scope.citydeals = filteredNeeds;
-                    $scope.found = $scope.cityneeds.length + " found";
-                    if ($scope.cityneeds.length > 0) {
-                        $scope.cancel = false;
-                        $scope.allneeds = true;
-                        $scope.alldeals = true;
-                        return;
-                    }
-
-                } else {
-                    $scope.cityneeds = [];
-                    $scope.citydeals = [];
-                    $scope.found = "None found";
-                    $scope.allneeds = false;
-                    $scope.alldeals = false;
-                    $scope.spinner = false;
-                }
-
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                Notification.error({ message: "Error processing this request. Please try again later!", positionY: 'bottom', positionX: 'center' });
-                $scope.allneeds = false;
-                $scope.alldeals = false;
-            }
-        );
-    };
-
-    function adjustsettings(settingsObject) {
-        if (!settingsObject) return true;
-
-        var start = new Date(settingsObject.pushstarttime);
-        var stop = new Date(settingsObject.pushstoptime);
-        var timenow = new Date();
-        start.setFullYear(
-            timenow.getFullYear(),
-            timenow.getMonth(),
-            timenow.getDate()
-        );
-        stop.setFullYear(
-            timenow.getFullYear(),
-            timenow.getMonth(),
-            timenow.getDate()
-        );
-        if (stop < start) stop.setDate(timenow.getDate() + 1);
-        settingsObject.pushstarttime = start;
-        settingsObject.pushstoptime = stop;
-        return settingsObject;
-    }
-    $scope.HaveIAcceptedThisdeal = function(row) {
-        if (!row.receiver || receiver.length < 1)
-            return false;
-        if (row.receiver.receiver_email == UserService.getLoggedIn().email)
-            return true;
-        else
-            return false;
     };
 
     $scope.Subscribe = function(data, user) {
@@ -2319,207 +2166,6 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         );
     };
 
-    $scope.Acceptdeal = function(row, status) {
-        $scope.uuid = "";
-        $scope.result = "";
-        $scope.spinner = true;
-        var loggedinUser = UserService.getLoggedIn();
-        var receiveTime = new Date();
-        var filteredtime = $filter("date")(receiveTime, "medium");
-        var updateURL =
-            BASEURL + "/acceptdeal?uuid=" +
-            row.uuid +
-            "&receiver_name=" +
-            loggedinUser.fullname +
-            "&receiver_phone=" +
-            loggedinUser.phone +
-            "&receiver_email=" +
-            loggedinUser.email +
-            "&receiver_uuid=" +
-            loggedinUser.uuid +
-            "&received_time=" +
-            filteredtime +
-            "&status=" +
-            status;
-        console.log("Accept deal URL is: " + updateURL);
-        $http({
-            method: "GET",
-            url: encodeURI(updateURL)
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                //alert(response)
-                //   $scope.found  = "Accepted deal Successfully going from " + row.from + " to " + row.to + " at " + row.time;
-                $scope.spinner = false;
-                if (response.data === "Already Accepted") {
-                    $scope.result = response.data;
-                    $scope.uuid = row.uuid;
-                    $scope.alldeals = true;
-                    $scope.cancel = true;
-                    return;
-                } else {
-                    $scope.result = ("successfully " + status).toUpperCase();
-                    $scope.Getdeals("city", row.city, false);
-                    $scope.uuid = row.uuid;
-                    $scope.alldeals = true;
-                    $scope.cancel = true;
-                    SendPushToUserByEmail(
-                        row.email,
-                        "deal accepted by " + loggedinUser.fullname
-                    );
-                }
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                $scope.accepteddeal = "Could not submit acceptance. " + error;
-                $scope.cancel = false;
-            }
-        );
-    };
-    var accepts = [];
-
-    $scope.GetdealAcceptances = function(row, cancel) {
-        $scope.spinner = true;
-        var acceptsURL =
-            BASEURL + "/getdealacceptances?uuid=" + row.uuid;
-        $http({
-            method: "GET",
-            url: acceptsURL
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                $scope.spinner = false;
-                accepts = response.data.entities;
-                if (cancel) $scope.Canceldeal(row, false);
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                alert("Could not submit acceptance. " + error);
-                $scope.accepted = false;
-            }
-        );
-    };
-
-    $scope.GetAccepteddeals = function(email) {
-        $scope.spinner = true;
-        var getURL =
-            BASEURL + "/accepteddeals?email=" + email.trim();
-        getURL = encodeURI(getURL);
-        $http({
-            method: "GET",
-            url: getURL
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                $scope.spinner = false;
-                if (angular.isArray(response.data)) {
-                    $scope.citydeals = response.data;
-                    // $scope.found  = "Active deal offers for " + param_name;
-                    $scope.alldeals = true;
-                    $scope.cancel = true;
-                } else {
-                    $scope.result = response.data;
-                    // $scope.found  = "Active deal offers for " + param_name;
-                    $scope.alldeals = false;
-                    $scope.cancel = false;
-                }
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                $scope.found = "Oops! There was a problem. " + error;
-                $scope.alldeals = false;
-            }
-        );
-    };
-    $scope.CancelOffer = function(row) {
-        if (confirm("Are you sure you want to cancel this offer?") == false) {
-            console.log("####User cancelled Offer Deletion");
-            return;
-        }
-        $scope.spinner = true;
-        var cancelURL = BASEURL + "/canceloffer?uuid=" + row.uuid;
-        Notification.info({ message: "Obliterating offer..please wait!", positionY: 'bottom', positionX: 'center' });
-        $http({
-            method: "GET",
-            url: encodeURI(cancelURL)
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                $scope.spinner = false;
-                //alert("Successfully Cancelled.");
-                Notification.success({ message: "All done! Sucessfully removed offer.", positionY: 'bottom', positionX: 'center' });
-                $scope.cancel = true;
-                $scope.Getdeals("email", $scope.login_email, true);
-                $scope.result = "Successfully Cancelled This Offer";
-                /*SendPushToUser(
-                    row.receiver.receiver_uuid,
-                    "A deal offered by " + $scope.fullname + " has been cancelled"
-                );*/
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                $scope.result = "Could not cancel. " + cancelURL;
-                Notification.error({ message: "Error processing this request. Please try again later!", positionY: 'bottom', positionX: 'center' });
-                $scope.accepted = false;
-                $scope.uuid = row.uuid;
-                $scope.cancel = false;
-                return;
-            }
-        );
-    };
-
-    $scope.Canceldeal = function(row, responseAsMessage) {
-        //   $scope.uuid = '';
-        //    $scope.GetdealAcceptances(row);
-        $scope.spinner = true;
-        var cancelURL =
-            BASEURL + "/cancelaccepteddeal?uuid=" +
-            row.uuid +
-            "&receiver_email=" +
-            UserService.getLoggedIn().email;
-        $http({
-            method: "GET",
-            url: cancelURL
-        }).then(
-            function successCallback(response) {
-                // this callback will be called asynchronously
-                // when the response is available
-                $scope.spinner = false;
-                Notification.info({ message: "Successfully Cancelled This Offer!", positionY: 'bottom', positionX: 'center' });
-                if (responseAsMessage) {
-                    $scope.GetMyAccepteddeals(login_email);
-                    return;
-                }
-                $scope.uuid = row.uuid;
-                $scope.cancel = true;
-                $scope.Getdeals("city", row.city, false);
-                $scope.result = "Cancelled deal";
-                //    SendPushToUserByEmail(row.email, "deal cancelled by a passenger");
-            },
-            function errorCallback(error) {
-                // called asynchronously if an error occurs
-                // or server returns response with an error status.
-                $scope.spinner = false;
-                $scope.result = "Could not cancel. ";
-                Notification.error({ message: "Error processing this request. Please try again later!", positionY: 'bottom', positionX: 'center' });
-                $scope.accepted = false;
-                $scope.uuid = row.uuid;
-                $scope.cancel = false;
-            }
-        );
-    };
     $scope.ContactUs = function(query) {
         $scope.spinner = true;
         var getURL =
@@ -2627,8 +2273,8 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                         $rootScope.loggedIn = true;
                         //$rootScope.$emit("CallGetGroupsForUserMethod", {});
                         $rootScope.$emit("CallSetupWebsocketsMethod", {});
-                        $rootScope.$emit("CallGetOnlineUsersMethod", {});
-                        $rootScope.$emit("CallStartTimerMethod", {});
+                        //$rootScope.$emit("CallGetOnlineUsersMethod", {});
+                        //$rootScope.$emit("CallStartTimerMethod", {});
                         $rootScope.$emit("NewLogin", {});
                         //$location.path($rootScope.savedLocation);
 

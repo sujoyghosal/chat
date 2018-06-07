@@ -4,133 +4,169 @@
 <head>
     <meta charset="UTF-8">
     <title>Freecycle - Contact Us</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <style>
+        #mylist {
+            width: auto;
+            height: 300px;
+            padding: 20px;
+            background-color: #05202b;
+            overflow-y: auto;
+            text-align: left;
+            list-style-type: none;
+        }
+        
+        .fa-circle {
+            color: red;
+        }
+        /* The heart of the matter */
+        
+        .testimonial-group>.row {
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .testimonial-group>.row>.col-xs-3 {
+            display: inline-block;
+            float: none;
+        }
+        /* Decorations */
+        
+        .col-xs-3 {
+            color: #fff;
+            /*font-size: 48px;*/
+            padding-bottom: 20px;
+            padding-top: 18px;
+        }
+        
+        .col-xs-3:nth-child(3n+1) {
+            background: #c69;
+        }
+        
+        .col-xs-3:nth-child(3n+2) {
+            background: #9c6;
+        }
+        
+        .col-xs-3:nth-child(3n+3) {
+            background: #69c;
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f1f1f1;
+            min-width: 160px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+        
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown a:hover {
+            background-color: #ddd
+        }
+        
+        .show {
+            display: block;
+        }
+    </style>
+    <script>
+        $('.add').click(function() {
+
+            //$("#mylist").append("<li>Test</li>");
+
+            $('#mylist').animate({
+                scrollTop: $('#mylist').prop("scrollHeight")
+            }, 500);
+
+        });
+    </script>
 </head>
 
-<body ng-app="myApp">
-    <div class="container" ng-controller="ChatCtrl">
-        <!--              -->
-        <div id="chat">
-            <form class="form-horizontal" name="myForm" autocomplete="on" novalidate>
-                <center/>
-                <legend>Lets Talk!</legend>
-                <center/>
-                <br>
-                <fieldset class="clearfix:after">
-                    <p>
-                        <label for="sel1">{{ targetChatuserName }}</label>
-                        <button type="button" class="btn btn-info" ng-click="AnalysePersonality()">Analyse Personality of {{ targetChatuserName }}</button>
-                    </p>
-                    <br>
-                    <ul>
-                        <li ng-repeat-start="x in chatArray track by $index">{{ x.sentby + ' :' }}</li>
-                        <li ng-repeat-end>{{ x.text + ' ' + x.time }}</li>
+<body ng-app="myApp" ng-controller="ChatCtrl">
+    <center>
+        <div id="firebaseui-auth-container" ng-hide="loggedIn"></div>
+        <div id="sign-in-status"></div>
+        <div id="sign-in"></div>
+        <div id="account-details"></div>
+
+    </center>
+    <div class="row">
+        <div class="container testimonial-group">
+            <div class="row text-center">
+                <legend>Welcome {{ username }} to Live Chatroom</legend>
+                <div class="col-xs-3" ng-click="StartChat(x);" ng-repeat="x in users track by $index">
+                    <ul ng-show="showDropdown">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle"><i class="fas fa-bell"></i>Profile</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#" ng-click="GetPersonality(x);spinner=true;showChat=false;showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-user"></i>&nbsp;Personality</a></li>
+                                <!--                                <li><a href="#" ng-click="GetPersonality(x);showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-dna"></i>&nbsp;Values</a></li>
+                                <li><a href="#" ng-click="GetPersonality(x);showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;"><i class="fas fa-dove"></i>&nbsp;Needs</a></li>-->
+                                <li><a href="#" ng-click="GetPersonality(x);spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;"><i class="fas fa-shopping-cart"></i>&nbsp;Purchasing Pattern</a></li>
+                            </ul>
+                        </li>
                     </ul>
-                    <p>
-                        <input id="items" name="text" ng-model="chat.text" ng-minlength="2" type="text" autocomplete="off" placeholder="&#xf086; Chat Text" class="form-control input-md" ng-required="true">
-                        <p class="isa_error" ng-show="myForm.items.$dirty && myForm.items.$invalid">Please Enter Text</p>
-                    </p>
-                    <p>
-                        <input type="button" name="submit" class="btn btn-success btn-xl" value="SUBMIT" ng-click="SendChat(chat); spinner = true;" ng-disabled="myForm.name.$invalid||  myForm.email.$invalid ||  myForm.phone.$invalid || 
-                                          myForm.city.$invalid ||  myForm.subject.$invalid ||  myForm.text.$invalid">
-                        <br>
-                        <center/> {{result}}
-                    </p>
-                    <center/><i ng-show="spinner " class="fa fa-circle-o-notch fa-spin "></i>
-                </fieldset>
-            </form>
-        </div>
+                    <img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" alt="Card image" style="width:40%">
+                    <i ng-show="nophoto" class="fas fa-user"></i>
 
-        <div align=center ng-show="loading ">
-            <i class="fa fa-refresh fa-spin fa-3x fa-fw "></i>
-            <span class="sr-only ">Loading...</span>
-        </div>
-        <div id="results" align=center ng-show="resultsReady">
-            <p ng-show="errorMsg!=''">{{errorMsg}}</p>
-            <p>{{response.data.word_count_message}}</p><br>
-            <div ng-hide="LOL" class="container">
-                <div class="btn-group">
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;">Personality</a>
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;">Values</a>
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;">Needs</a>
-                    <a href="#/personality" class="btn btn-success" ng-click="showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;">Consumption</a>
+                    <p>{{ x.fullname }}</p>
+
                 </div>
-            </div>
-            <br>
-            <div ng-show="LOL" style="width:100%;height:0;padding-bottom:75%;position:relative;">
-                <h2>Too few words!!!</h2>
-                <center/><img src="https://media.giphy.com/media/jrZXivrCv3deg/giphy.gif"><img>
-            </div>
-            <div class="table-responsive" ng-show="showPersonality || firsttime">
-                <table class="table-sm table-hover">
-                    <tbody ng-repeat="resp in response.data.personality ">
-                        <tr>
-                            <th>{{resp.name}}</th>
-                            <th vertical-align="middle">
-                                <div ng-init="percent=resp.percentile*100 " class="outer">
-                                    <div class="inner" ng-style="{ width: percent + '%' } "></div>
-                                </div>
-                            </th>
-                            <th>{{resp.percentile | number:2}}</th>
-                        </tr>
-                        <tr ng-repeat="sub in resp.children ">
-                            <td>{{sub.name}}</td>
-                            <td vertical-align="middle">
-                                <div ng-init="percent=sub.percentile*100 " class="outer">
-                                    <div class="inner" ng-style="{ width: percent + '%' } "></div>
-                                </div>
-                            </td>
-                            <td>{{sub.percentile | number:2}}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="col-xs-1"></div>
             </div>
 
-            <div class="table-responsive" ng-show="showNeeds">
-                <table class="table-sm table-hover">
-                    <tr ng-repeat="need in response.data.needs">
-                        <td>{{need.name}}</td>
-                        <td>
-                            <div ng-init="percent=need.percentile*100 " class="outer">
-                                <div class="inner " ng-style="{ width: percent + '%' }"></div>
-                            </div>
-                        </td>
-                        <td>{{need.percentile | number:2}}</td>
-                    </tr>
-                </table>
-            </div>
-            <div class="table-responsive" ng-show="showValues">
-                <table class="table-sm table-hover">
-                    <tr ng-repeat="value in response.data.values">
-                        <td>{{value.name}}</td>
-                        <td>
-                            <div ng-init="percent=value.percentile*100 " class="outer">
-                                <div class="inner " ng-style="{ width: percent + '%' }"></div>
-                            </div>
-                        </td>
-                        <td>{{value.percentile | number:2}}</td>
-                    </tr>
-                </table>
-            </div>
-            <div class="table-responsive" ng-show="showConsumption">
-                <table class="table-sm table-hover">
-                    <tbody ng-repeat="cp in response.data.consumption_preferences ">
-                        <tr>
-                            <th>{{cp.name}}</th>
-                            <th> </th>
-                        </tr>
-                        <tr ng-repeat="sub in cp.consumption_preferences ">
-                            <td>{{sub.name}}</td>
-                            <td>
-                                <div ng-init="percent=sub.score*100 " class="outer ">
-                                    <div class="inner " ng-style="{ width: percent + '%' } "></div>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <hr>
+
+            <fieldset class="clearfix:after">
+                <div class="row Type Text:">
+                    <div class="col-xs-12">
+                        <div id="chat" class="container">
+                            <ul id="mylist">
+                                <li ng-repeat="x in chatArray track by $index">
+                                    <!--<div class="w3-panel w3-card-4 w3-white" ng-style="{'background-color':x.color}">-->
+                                    <div class="container" align="{{x.align}}" style="width:97%;height:auto">
+                                        <div ng-style="x.css" align="left">
+                                            {{ x.sentby + ': ' + x.text + ' ' }}
+                                            <p align="right">
+                                                {{ x.time }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <br>
+                                </li>
+                                <li>
+                                    <a id="bottom"></a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <form>
+                            <input type="text" ng-disabled="!loggedIn" ng-model="chat.text" class="form-control" placeholder="Enter a Message "> </p>
+                            <p>
+                                <button class="btn btn-primary btn-s add" ng-disabled="chat.text == null" type="submit" ng-click="SendChat(chat)">Submit</button>
+                                <!--<button class="btn btn-primary btn-s" type="reset" ng-click="chatArray = null;" ng-hide="false">Clear Chat</button>-->
+                                <br>
+                                <center/> {{result}}
+                            </p>
+                            <center/><i ng-show="spinner " class="fas fa-spinner"></i>
+                        </form>
+                    </div>
+                </div>
+            </fieldset>
         </div>
-
     </div>
 
 </body>
