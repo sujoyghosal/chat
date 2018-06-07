@@ -246,46 +246,49 @@ function updateusersettings(req, res) {
     });
 }
 
-app.post("/createevent", function(req, res) {
-    var t = new Date();
-    req.body.name = req.body.email + "-" + t;
-    console.log("####Create Event Request Body: " + req.body);
+function getchatsbyemail(e) {
+    var options2 = {
+        type: "chatevents",
+        qs: {
+            ql: "from.email = '" + e + "'"
+        }
+    };
+    console.log("####getchatsbyemail: options = " + JSON.stringify(options2));
+    loggedIn.createCollection(options2, function(err, chatevents) {
+        if (err) {
+            console.error("##### Error fetching chat events: " + JSON.stringify(err));
+            return;
+        }
+        //console.log("####getchatsbyemail: response = " + JSON.stringify(chatevents));
+        var allchats = [];
+        var time = new Date();
+        while (chatevents.hasNextEntity()) {
+            var achat = chatevents.getNextEntity().get();
+            allchats.push(achat);
+        }
+        var response = {
+            timestamp: time.getTime(),
+            events: allchats
+        }
+        io.sockets.emit('chateventsforoneuser', response);
+        return JSON.stringify(response);
+
+    });
+}
+
+function insertChatEvent(e) {
+
     var options = {
         method: "POST",
-        endpoint: "donationevents",
-        body: req.body
+        endpoint: "chatevents",
+        body: e
     };
-    if (loggedIn === null) {
-        logIn(req, res, function() {
-            createevent(options, req, res);
-        });
-    } else {
-        createevent(options, req, res);
-    }
-});
-
-function createevent(e, req, res) {
-    loggedIn.request(e, function(err, data) {
+    loggedIn.request(options, function(err, data) {
         if (err) {
-            res.send("ERROR");
+            console.error("####ERROR: while inserting event to DB..createevent menthod.");
+            return;
         } else {
-            console.log("#######CreateEvents Success!!!!!");
-            if (mysocket) {
-                console.log("##### Sending event " + data.entities[0].group_name);
-                //mysocket.broadcast.emit('matchingevent', o);
-                io.sockets.in(data.entities[0].group_name).emit('matchingevent', data);
-                //io.sockets.emit('matchingevent', data);
-                console.log("####Sent matchingevent");
-                var msg = JSON.stringify(data.entities[0].items + "@: " +
-                    data.entities[0].address + ". Contact " + data.entities[0].postedby + ": " +
-                    data.entities[0].phone_number + " / " + data.entities[0].email);
-                //sendFCMPush("FreeCycle Event", msg, data.entities[0].group_name.replace(/-/g, '_'));
-                console.log("#####Event Object = " + JSON.stringify(data));
-                res.jsonp(data);
-            } else {
-                console.log("#### mysocket is null");
-                res.send("EVENT CREATED BUT NOT BROADCAST DUE TO NULL SOCKET!");
-            }
+            console.log("#######CreateEvents Success!!!!! " + JSON.stringify(data));
 
         }
     });
@@ -672,7 +675,7 @@ function logIn(req, res, next) {
     ug.login("sujoyghosal", "Kolkata1", function(err) {
         if (err) {
             console.log("Login failed: %s", JSON.stringify(err));
-            res.jsonp(500, { error: err });
+            //res.jsonp(500, { error: err });
             return;
         }
         loggedIn = new usergrid.client({
@@ -686,7 +689,7 @@ function logIn(req, res, next) {
         console.log("Got a token. I wonder when it expires? Let's guess.");
         // Go on to do what we were trying to do in the first place
         setTimeout(expireToken, 6000);
-        next(req, res);
+        next();
     });
 }
 
@@ -730,7 +733,7 @@ function removeOfflineUsersFromList() {
         }
     }
 
-    console.log("#### Broadcasting latest Online Users List.." + JSON.stringify(onlineUsers));
+    //console.log("#### Broadcasting latest Online Users List.." + JSON.stringify(onlineUsers));
     //io.emit('activeuserschanged', JSON.stringify(onlineUsers));
     sendActiveUsers();
 }
@@ -789,8 +792,33 @@ io.on('connection', function(socket) {
         //console.log("####Joining room " + chatObj.target.email);
         //socket.join(chatObj.target.email);
         io.sockets.emit('chateventforall', chatObj);
+        chatObj.name = chatObj.from.sentby + "-" + Date();
+        if (loggedIn === null) {
+            logIn(null, null, function() {
+                insertChatEvent(chatObj);
+            });
+        } else {
+            insertChatEvent(chatObj);
+        }
+
         //socket.broadcast.emit('chateventforall', chatObj);
         //io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
+    });
+    socket.on('getchats', function(email) { //login
+        if (!email || email == undefined) {
+            console.log("####Ignoring null or undefined join request");
+            return;
+        } else {
+            console.log("####Pulling chats for email " + JSON.stringify(email));
+        }
+
+        if (loggedIn === null) {
+            logIn(null, null, function() {
+                getchatsbyemail(email);
+            });
+        } else {
+            getchatsbyemail(email);
+        }
     });
     socket.on('leave', function(room) {
         if (!room || room == undefined) {
@@ -857,9 +885,9 @@ io.on('connection', function(socket) {
                 }
             }
         }
-        console.log("#### Broadcasting logout event for " + email + " for all users to update active user states");
+        //console.log("#### Broadcasting logout event for " + email + " for all users to update active user states");
         console.log("#### Online USers after delete: " + JSON.stringify(onlineUsers));
         //io.emit('activeuserschanged', email);
         sendActiveUsers();
     });
-});
+})
