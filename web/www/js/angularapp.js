@@ -259,9 +259,9 @@ var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
 var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
 
-var BASEURL = BASEURL_PERSONAL;
-var GUIURL = 'https://chatwebsujoy.mybluemix.net';
-//var GUIURL = 'http://localhost:3000';
+var BASEURL = BASEURL_LOCAL;
+//var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $anchorScroll, $window, Notification, Socialshare, UserService, DataService) {
@@ -272,7 +272,6 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     var room = null;
     $scope.loading = false;
     $rootScope.username = UserService.getLoggedIn().fullname;
-    $scope.users = [];
     $scope.cancel = false;
     $scope.uuid = UserService.getLoggedIn().uuid;
     $scope.lat = "";
@@ -296,8 +295,8 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $rootScope.mobileDevice = false;
     $scope.chatbox = "";
     $rootScope.chatArray = [];
-    $rootScope.onlineUsers = [];
-    $rootScope.personalitytext = null;
+    //$rootScope.onlineUsers = [];
+    //$rootScope.personalitytext = null;
     $scope.loading = false;
     $scope.showValues = false;
     $scope.showPersonality = false;
@@ -596,6 +595,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.StartChat = function(user) {
         //alert(JSON.stringify(user));
         $rootScope.targetChatuser = user;
+        //$scope.targetChatuserName = JSON.parse(user).fullname;
         $scope.showChat = false;
         if ($scope.showDropdown)
             $scope.showDropdown = false;
@@ -848,6 +848,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     };
 
     $scope.initApp = function() {
+        console.log("##### InitApp called");
         var uiConfig = {
             signInSuccessUrl: GUIURL + '/#home',
             signInOptions: [
@@ -866,12 +867,12 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         var ui = new firebaseui.auth.AuthUI(firebase.auth());
         // The start method will wait until the DOM is loaded.
         ui.start('#firebaseui-auth-container', uiConfig);
-        ui.disableAutoSignIn();
+        //ui.disableAutoSignIn();
 
         firebase.auth().onAuthStateChanged(function(user) {
                 thisUser = user;
-
                 if (user) {
+                    console.log("##### onAuthStateChanged called with valid user");
                     // User is signed in.
                     var displayName = user.displayName;
                     var email = user.email;
@@ -925,6 +926,8 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     // The start method will wait until the DOM is loaded.
                     ui.start('#firebaseui-auth-container', uiConfig);
                     ui.disableAutoSignIn();*/
+                    console.log("##### onAuthStateChanged called with invalid user");
+                    ui.start('#firebaseui-auth-container', uiConfig);
                     console.log("##### Prompting user login as no logged in user found");
                     $rootScope.loggedIn = false;
                 }
@@ -941,15 +944,16 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         // call $anchorScroll()
         $anchorScroll();
     };
-    $scope.GetUserByEmail = function(email, context) {
+
+    $scope.GetChatsByEmail = function(email) {
         if (!email) {
-            Notification.error({ message: "Email Not Found!", positionY: 'bottom', positionX: 'center' });
+            Notification.error({ message: "Could not retrieve chats, please try again.", positionY: 'bottom', positionX: 'center' });
             $scope.found = "ERROR - Email NOT FOUND";
             return;
         }
         $scope.spinner = true;
         //first create group with id=<city>-<place>
-        var getURL = BASEURL + "/getuser?email=" + email.trim();
+        var getURL = BASEURL + "/getchatsbyemail?email=" + email.trim();
         getURL = encodeURI(getURL);
         $http({
             method: "GET",
@@ -958,32 +962,25 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             function successCallback(response) {
                 // this callback will be called asynchronously
                 // when the response is available
-                console.log("GetUserByEmail Response: " + JSON.stringify(response));
                 $scope.spinner = false;
                 if (!DataService.isValidObject(response) || !DataService.isValidArray(response.data)) {
-                    console.log("#####No User Found!");
-                    Notification.error({ message: "User Not Found!", positionY: 'bottom', positionX: 'center' });
-                    if (context == 'login') {
-                        UserService.setLoggedInStatus(true);
-                        console.log("Creating New User With Data: " + JSON.stringify(UserService.getLoggedIn()));
-                        //$rootScope.$emit("CallCreateUserMethod", JSON.stringify(UserService.getLoggedIn()));
-                        $scope.CreateUser(JSON.stringify(UserService.getLoggedIn()))
-                            //$location.path('/home');
-                        return;
-                    }
+                    console.log("#####No Chats Found!");
+
                 } else {
-                    var users = [];
-                    users = response.data;
-                    if (context === 'login') {
-                        //UserService.setLoggedIn(users[0]);
-                        UserService.setLoggedInStatus(true);
-                        UserService.setLoggedIn(users[0]);
-                        $rootScope.username = users[0].fullname;
-                        $rootScope.loggedIn = true;
-                        //$rootScope.$emit("CallGetGroupsForUserMethod", {});
-                        $location.path($rootScope.savedLocation);
+                    var data = response.data;
+                    $scope.errorMsg = "";
+                    var userTexts = [];
+                    for (i = 0; i < data.length; i++) {
+                        userTexts.push(data[i].from.text);
                     }
-                    return;
+                    $rootScope.personalitytext = JSON.stringify(userTexts);
+                    if ($rootScope.personalitytext && $rootScope.personalitytext.length < 108) {
+                        Notification.error({ message: "Not enough words in user chat for analysis. Please try later!", positionY: 'bottom', positionX: 'center' });
+                        $scope.errorMsg = "Not enough words in user chat for analysis. Please try later!";
+                        console.log("####Chat data received for " + email + " is:  " + $rootScope.personalitytext);
+                        //return;
+                    }
+                    $location.path('/personality');
                 }
             },
             function errorCallback(error) {
@@ -995,10 +992,11 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         );
     };
     $scope.GetPersonality = function(user) {
-        console.log("#### GetPersonality received input = " + JSON.stringify(user));
+        if (!user)
+            user = JSON.parse($rootScope.targetChatuser);
         $scope.showChat = false;
         $scope.spinner = true;
-        $scope.setupWebSockets(user.email, 'getchats')
+        $scope.GetChatsByEmail(user.email);
     }
     $scope.setupWebSockets = function(email, arg) {
         //console.log("#####Setting up listener for alerts");
@@ -1036,34 +1034,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             socket.emit('logout', email);
         } else if (arg && arg === "alive") {
             socket.emit('alive', loggedinUser);
-        } else if (arg && arg === "getchats") {
-            console.log("#### Getting all chats for " + email);
-            socket.emit('getchats', email);
         }
-        socket.on('chateventsforoneuser', function(data) {
-            $scope.errorMsg = "";
-            console.log("####received chat events for an user" + JSON.stringify(data));
-            if (!data || !DataService.isValidArray(data.events)) {
-                Notification.error({ message: "Could Not Retrieve Chats for User. Please try later!", positionY: 'bottom', positionX: 'center' });
-                return;
-            }
-            if (data.timestamp == lasTimeStamp) {
-                console.log("####Discarding duplicate chateventsforoneuser events");
-                return;
-            }
-            var userTexts = [];
-            for (i = 0; i < data.events.length; i++) {
-                userTexts.push(data.events[i].from.text);
-            }
-            $scope.personalitytext = JSON.stringify(userTexts);
-            if ($scope.personalitytext && $scope.personalitytext.length < 108) {
-                //Notification.error({ message: "Not enough words in user chat for analysis. Please try later!", positionY: 'bottom', positionX: 'center' });
-                $scope.errorMsg = "Not enough words in user chat for analysis. Please try later!";
-                //return;
-            }
-            lasTimeStamp = data.timestamp;
-            $location.path('/personality');
-        });
 
         socket.on('activeuserschanged', function(data) {
 
@@ -1079,9 +1050,9 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 return;
             } else {
                 lastHeartBeat = activeUsers.timestamp;
-                $scope.users = activeUsers.users;
-                for (i = 0; i < $scope.users.length; i++) {
-                    var a = $scope.users[i];
+                $rootScope.onlineUsers = activeUsers.users;
+                for (i = 0; i < $rootScope.onlineUsers.length; i++) {
+                    var a = $rootScope.onlineUsers[i];
                     if (a.photoURL == null) {
                         $scope.nophoto = true;
                     }
