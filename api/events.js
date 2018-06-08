@@ -3,12 +3,12 @@ var usergrid = require("usergrid");
 var randtoken = require("rand-token");
 var nodemailer = require('nodemailer');
 var request = require("request");
-/*
+
 // Run Locally
 var PORT = process.env.VCAP_APP_PORT || 9000;
 var BASEURL = "http://localhost:" + PORT;
 var BASEGUIURL = "http://localhost:3000";
-*/
+/*
 //Run on Cloud
 var BASEURL_APIGEE = "http://sujoyghosal-test.apigee.net/freecycleapis";
 var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
@@ -23,7 +23,7 @@ var BASEURL = BASEURL_PERSONAL;
 var BASEGUIURL = BASEGUIURL_PERSONAL;
 var PORT = process.env.VCAP_APP_PORT || 80;
 //var PORT = process.env.VCAP_APP_PORT || 9000;
-
+*/
 // Usergrid config - Common for all platforms
 var APPNAME_DEV = 'deals';
 var CLIENTID_DEV = 'b3U6qZdN9MaZEeanNBIuBzeXfQ';
@@ -245,19 +245,30 @@ function updateusersettings(req, res) {
         }
     });
 }
+app.get("/getchatsbyemail", function(req, res) {
+    if (!req || !req.param('email') || req.param('email').length < 4) {
+        console.err("##### Invalid email for getchatsbyemail");
+        return;
+    }
+    if (loggedIn === null) {
+        logIn(req, res, getchatsbyemail);
+    } else {
+        getchatsbyemail(req, res);
+    } //qs:{ql:"name='bread' or uuid=b3aad0a4-f322-11e2-a9c1-999e12039f87"}
+});
 
-function getchatsbyemail(e) {
+function getchatsbyemail(req, res) {
     var options2 = {
         type: "chatevents",
         qs: {
-            ql: "from.email = '" + e + "'"
+            ql: "from.email = '" + req.param('email') + "'"
         }
     };
     console.log("####getchatsbyemail: options = " + JSON.stringify(options2));
     loggedIn.createCollection(options2, function(err, chatevents) {
         if (err) {
             console.error("##### Error fetching chat events: " + JSON.stringify(err));
-            return;
+            res.jsonp(err);
         }
         //console.log("####getchatsbyemail: response = " + JSON.stringify(chatevents));
         var allchats = [];
@@ -266,13 +277,7 @@ function getchatsbyemail(e) {
             var achat = chatevents.getNextEntity().get();
             allchats.push(achat);
         }
-        var response = {
-            timestamp: time.getTime(),
-            events: allchats
-        }
-        io.sockets.emit('chateventsforoneuser', response);
-        return JSON.stringify(response);
-
+        res.jsonp(allchats);
     });
 }
 
@@ -689,7 +694,7 @@ function logIn(req, res, next) {
         console.log("Got a token. I wonder when it expires? Let's guess.");
         // Go on to do what we were trying to do in the first place
         setTimeout(expireToken, 6000);
-        next();
+        next(req, res);
     });
 }
 
@@ -804,22 +809,7 @@ io.on('connection', function(socket) {
         //socket.broadcast.emit('chateventforall', chatObj);
         //io.sockets.in(chatObj.target.email).emit('chatevent', chatObj);
     });
-    socket.on('getchats', function(email) { //login
-        if (!email || email == undefined) {
-            console.log("####Ignoring null or undefined join request");
-            return;
-        } else {
-            console.log("####Pulling chats for email " + JSON.stringify(email));
-        }
 
-        if (loggedIn === null) {
-            logIn(null, null, function() {
-                getchatsbyemail(email);
-            });
-        } else {
-            getchatsbyemail(email);
-        }
-    });
     socket.on('leave', function(room) {
         if (!room || room == undefined) {
             console.log("####Ignoring null or undefined leave request");

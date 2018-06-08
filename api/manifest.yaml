@@ -2,3 +2,4 @@ applications:
 - name: ChatAPISujoy
   random-route: true
   memory: 512M
+  instances: 2
