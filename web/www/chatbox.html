@@ -11,7 +11,8 @@
             width: auto;
             height: 300px;
             padding: 20px;
-            background-color: #a0c7da;
+            background-color: #edeee72d;
+            border: 1px solid #73AD21;
             overflow-y: auto;
             text-align: left;
             list-style-type: none;
@@ -36,6 +37,7 @@
         .col-xs-3 {
             color: #fff;
             /*font-size: 48px;*/
+            width: 110px;
             padding-bottom: 20px;
             padding-top: 18px;
         }
@@ -99,9 +101,8 @@
         }
         
         .center {
-            margin: auto;
-            width: auto;
-            left: 0px;
+            margin: 0 auto;
+            width: 30%;
             border: 1px solid #73AD21;
             padding: 2px;
             text-align: left;
@@ -134,65 +135,63 @@
                 <legend>Welcome {{ username }} to Live Chatroom</legend>
                 <div class="col-xs-3" ng-click="StartChat(x);" ng-repeat="x in onlineUsers track by $index">
                     <div>
-                        <img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" alt="Card image" style="width:40%">
-                        <i ng-show="nophoto" class="fas fa-user"></i>
+                        <!--<img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" style="width:30%">-->
+                        <i ng-show="true" class="fas fa-user"></i>
                         <p>{{ x.fullname }}</p>
-                    </div>
-                    <div class="center" ng-show="showDropdown">
-                        <ul style="list-style-type: none" class="dropdown dropdown-toggle">
-                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-user"></i>&nbsp;Personality</a></li>
-                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;"><i class="fas fa-shopping-cart"></i>&nbsp;Purchase Pattern</a></li>
-                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-dna"></i>&nbsp;Values</a></li>
-                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;"><i class="fas fa-dove"></i>&nbsp;Needs</a></li>
-                        </ul>
-                    </div>
-                    <div ng-show="spinner">
-                        <i class="fas fa-cog fa-spin"></i>
+
                     </div>
                 </div>
                 <div class="col-xs-1"></div>
-
+                <div class="center" ng-show="showDropdown">
+                    <ul style="list-style-type: none" class="dropdown dropdown-toggle">
+                        <li><a href="#" ng-click="GetPersonality(null);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-user"></i>&nbsp;Personality</a></li>
+                        <li><a href="#" ng-click="GetPersonality(null);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;"><i class="fas fa-shopping-cart"></i>&nbsp;Purchase Pattern</a></li>
+                        <li><a href="#" ng-click="GetPersonality(null);showDropdown=false;spinner=true;showChat=false;showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-dna"></i>&nbsp;Values</a></li>
+                        <li><a href="#" ng-click="GetPersonality(null);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;"><i class="fas fa-dove"></i>&nbsp;Needs</a></li>
+                    </ul>
+                </div>
             </div>
-
+            <div ng-show="spinner"><i class="fas fa-cog fa-spin"></i></div>
             <hr>
             <div ng-show="showChat" class="row Type Text:">
-
-                <fieldset class="clearfix:after">
-                    <div class="col-xs-12">
-                        <div id="chat" class="container">
-                            <ul id="mylist">
-                                <li ng-repeat="x in chatArray track by $index">
-                                    <!--<div class="w3-panel w3-card-4 w3-white" ng-style="{'background-color':x.color}">-->
-                                    <div class="container" align="{{x.align}}" style="width:97%;height:auto">
-                                        <div ng-style="x.css" align="left">
-                                            {{ x.sentby + ': ' + x.text + ' ' }}
-                                            <p align="right">
-                                                {{ x.time }}
-                                            </p>
+                <form>
+                    <fieldset class="clearfix:after">
+                        <div class="col-xs-12">
+                            <div id="chat" class="container">
+                                <ul id="mylist">
+                                    <li ng-repeat="x in chatArray track by $index">
+                                        <!--<div class="w3-panel w3-card-4 w3-white" ng-style="{'background-color':x.color}">-->
+                                        <div class="container" align="{{x.align}}" style="width:97%;height:auto">
+                                            <div ng-style="x.css" align="left">
+                                                {{ x.sentby + ': ' + x.text + ' ' }}
+                                                <p align="right">
+                                                    {{ x.time }}
+                                                </p>
+                                            </div>
                                         </div>
+                                        <br>
+                                    </li>
+                                    <li>
+                                        <a id="bottom"></a>
+                                    </li>
+                                </ul>
+
+                                <input type="text" ng-disabled="!loggedIn" ng-model="chat.text" class="form-control" placeholder="Enter a Message ">
+                                <!-- <div class="col-xs-9">
+                                        <textarea rows="2" cols="50" name="usrtxt" wrap="hard" ng-disabled="!loggedIn" ng-model="chat.text" class="form-control" type="submit" placeholder="Enter a Message "></textarea>
                                     </div>
-                                    <br>
-                                </li>
-                                <li>
-                                    <a id="bottom"></a>
-                                </li>
-                            </ul>
+                                    <div class="col-xs-3">
+                                        <i ng-disabled="chat.text == null" type="submit" ng-click="SendChat(chat)" class="fas fa-arrow-alt-circle-right fa-3x"></i>
+                                    </div>
+                                </div>-->
+                                <p>
+                                    <button class="btn btn-primary btn-s add" ng-disabled="chat.text == null" type="submit" ng-click="SendChat(chat)">Submit</button>
+                                </p>
+                            </div>
                         </div>
-
-                        <form>
-                            <input type="text" ng-disabled="!loggedIn" ng-model="chat.text" class="form-control" placeholder="Enter a Message ">
-                            <p>
-                                <button class="btn btn-primary btn-s add" ng-disabled="chat.text == null" type="submit" ng-click="SendChat(chat)">Submit</button>
-                                <!--<button class="btn btn-primary btn-s" type="reset" ng-click="chatArray = null;" ng-hide="false">Clear Chat</button>-->
-                                <br>
-                                <center/> {{result}}
-                            </p>
-                            <center/><i ng-show="spinner " class="fas fa-spinner"></i>
-                        </form>
-                    </div>
-                </fieldset>
+                    </fieldset>
+                </form>
             </div>
-
         </div>
     </div>
 

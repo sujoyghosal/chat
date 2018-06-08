@@ -254,14 +254,11 @@ app.service("UserService", function() {
     };
 });
 
-var BASEURL_BLUEMIX = "https://freecycleapissujoy.mybluemix.net";
 var BASEURL_LOCAL = "http://localhost:9000";
-var BASEURL_PIVOTAL = "http://freecycleapissujoy-horned-erasure.cfapps.io";
-var BASEURL_PERSONAL = "https://chatapi-detrimental-fromage.mybluemix.net";
-
-var BASEURL = BASEURL_LOCAL;
-//var GUIURL = 'https://chatwebsujoy.mybluemix.net';
-var GUIURL = 'http://localhost:3000';
+var BASEURL_PERSONAL = "https://chatapisujoy-brave-hedgehog.mybluemix.net";
+var BASEURL = BASEURL_PERSONAL;
+var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+//var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $anchorScroll, $window, Notification, Socialshare, UserService, DataService) {
@@ -276,7 +273,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.uuid = UserService.getLoggedIn().uuid;
     $scope.lat = "";
     $scope.lng = "";
-    $scope.nophoto = false;
+
     //$scope.settings = adjustsettings(UserService.getLoggedIn().settings);
     $scope.selectedto = undefined;
     $scope.selectedfrom = undefined;
@@ -977,7 +974,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     console.log("####Raw User Texts = " + JSON.stringify(userTexts));
                     $rootScope.personalitytext = JSON.stringify(userTexts).replace(/["']/g, "").replace(/[\[\]]/g, "");
 
-                    if ($rootScope.personalitytext && $rootScope.personalitytext.length < 108) {
+                    if ($rootScope.personalitytext && $rootScope.personalitytext.trim().split(' ').length < 100) {
                         Notification.error({ message: "Not enough words in user chat for analysis. Please try later!", positionY: 'bottom', positionX: 'center' });
                         $scope.errorMsg = "Not enough words in user chat for analysis. Please try later!";
                         console.log("####Chat data received for " + email + " is:  " + $rootScope.personalitytext);
@@ -999,7 +996,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     };
     $scope.GetPersonality = function(user) {
         if (!user)
-            user = JSON.parse($rootScope.targetChatuser);
+            user = $rootScope.targetChatuser;
         $scope.showChat = false;
         $scope.spinner = true;
         $scope.GetChatsByEmail(user.email);
@@ -1059,7 +1056,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 $rootScope.onlineUsers = activeUsers.users;
                 for (i = 0; i < $rootScope.onlineUsers.length; i++) {
                     var a = $rootScope.onlineUsers[i];
-                    if (a.photoURL == null) {
+                    if (a.photoURL == null || a.photoURL == "") {
                         $scope.nophoto = true;
                     }
                 }
