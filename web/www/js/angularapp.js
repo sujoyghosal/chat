@@ -686,7 +686,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
             console.log("####Sending heartbeat event to server at " + new Date());
             //$scope.setupWebSockets(UserService.getLoggedIn().email, 'leave');
             $rootScope.$emit("alive", {});
-        }, 30000);
+        }, 10000);
 
     }
     $scope.StopTimer = function() {
