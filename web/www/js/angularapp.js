@@ -308,6 +308,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
     $scope.sampleText = "Your literature review should be appropriate to the kind of paper you are writing. If it is a thesis, you should strive for completeness, both in reviewing all the relevant literature and in making the main arguments clear to a reader who is unfamiliar with that literature. For a course paper or journal article, it is sufficient to review the main papers that are directly relevant. Again, you should assume that your reader has not read them, but you need not go into detail. You should review only those points that are relevant to the arguments you will make. Do not say that ``X found Y'' or ``demonstrated'' if X's conclusions don't follow from X's results. You can use words like ``X claimed to show that Y'' or ``suggested that'' when you are not sure. If you see a flaw, you can add, ``However ...''. Try to avoid expressions like ``Unfortunately, Smith and Jones neglected to examine [precisely what you are examining].'' It might have been unfortunate for them or for the field, but it is fortunate for you, and everyone knows it.";
     $scope.events = [];
     $scope.timeout = null;
+    $scope.showPersonality = false;
     var lastHeartBeat = null;
     var lasTimeStamp = null;
     $scope.showDropdown = false;
@@ -596,7 +597,7 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         //alert(JSON.stringify(user));
         $rootScope.targetChatuser = user;
         //$scope.targetChatuserName = JSON.parse(user).fullname;
-        $scope.showChat = false;
+        $scope.showChat = true;
         if ($scope.showDropdown)
             $scope.showDropdown = false;
         else
@@ -973,13 +974,17 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     for (i = 0; i < data.length; i++) {
                         userTexts.push(data[i].from.text);
                     }
-                    $rootScope.personalitytext = JSON.stringify(userTexts);
+                    console.log("####Raw User Texts = " + JSON.stringify(userTexts));
+                    $rootScope.personalitytext = JSON.stringify(userTexts).replace(/["']/g, "").replace(/[\[\]]/g, "");
+
                     if ($rootScope.personalitytext && $rootScope.personalitytext.length < 108) {
                         Notification.error({ message: "Not enough words in user chat for analysis. Please try later!", positionY: 'bottom', positionX: 'center' });
                         $scope.errorMsg = "Not enough words in user chat for analysis. Please try later!";
                         console.log("####Chat data received for " + email + " is:  " + $rootScope.personalitytext);
                         //return;
                     }
+                    $scope.showChat = false;
+                    $scope.showPersonality = true;
                     $location.path('/personality');
                 }
             },
@@ -987,7 +992,8 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 // called asynchronously if an error occurs
                 // or server returns response with an error status.
                 $scope.spinner = false;
-                $scope.passengers = "ERROR GETTING USER BY EMAIL";
+                $scope.showChat = true;
+                $scope.showPersonality = false;
             }
         );
     };

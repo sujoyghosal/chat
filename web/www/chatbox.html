@@ -81,6 +81,38 @@
         .show {
             display: block;
         }
+        
+        #menutop {
+            text-align: left;
+        }
+        
+        #menutop ul {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        
+        #menutop li {
+            margin: 0;
+            display: inline;
+            padding: 10px;
+        }
+        
+        .center {
+            margin: auto;
+            width: auto;
+            left: 0px;
+            border: 1px solid #73AD21;
+            padding: 2px;
+            text-align: left;
+            list-style-type: none;
+        }
+        
+        ul.demo {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
     </style>
     <script>
         $('.add').click(function() {
@@ -101,30 +133,31 @@
             <div class="row text-center">
                 <legend>Welcome {{ username }} to Live Chatroom</legend>
                 <div class="col-xs-3" ng-click="StartChat(x);" ng-repeat="x in onlineUsers track by $index">
-                    <ul ng-show="showDropdown">
-                        <li class="dropdown">
-                            <a href="#" class="dropdown-toggle"><i class="fas fa-bell"></i>Profile</a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#" ng-click="GetPersonality(x);spinner=true;showChat=false;showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-user"></i>&nbsp;Personality</a></li>
-                                <!--                                <li><a href="#" ng-click="GetPersonality(x);showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-dna"></i>&nbsp;Values</a></li>
-                                <li><a href="#" ng-click="GetPersonality(x);showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;"><i class="fas fa-dove"></i>&nbsp;Needs</a></li>-->
-                                <li><a href="#" ng-click="GetPersonality(x);spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;"><i class="fas fa-shopping-cart"></i>&nbsp;Purchasing Pattern</a></li>
-                            </ul>
-                        </li>
-                    </ul>
-                    <img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" alt="Card image" style="width:40%">
-                    <i ng-show="nophoto" class="fas fa-user"></i>
-
-                    <p>{{ x.fullname }}</p>
-
+                    <div>
+                        <img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" alt="Card image" style="width:40%">
+                        <i ng-show="nophoto" class="fas fa-user"></i>
+                        <p>{{ x.fullname }}</p>
+                    </div>
+                    <div class="center" ng-show="showDropdown">
+                        <ul style="list-style-type: none" class="dropdown dropdown-toggle">
+                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=true;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-user"></i>&nbsp;Personality</a></li>
+                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=false;showConsumption=true;firsttime=false;"><i class="fas fa-shopping-cart"></i>&nbsp;Purchase Pattern</a></li>
+                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=true;showPersonality=false;showNeeds=false;showConsumption=false;firsttime=false;"><i class="fas fa-dna"></i>&nbsp;Values</a></li>
+                            <li><a href="#" ng-click="GetPersonality(x);showDropdown=false;spinner=true;showChat=false;showValues=false;showPersonality=false;showNeeds=true;showConsumption=false;firsttime=false;"><i class="fas fa-dove"></i>&nbsp;Needs</a></li>
+                        </ul>
+                    </div>
+                    <div ng-show="spinner">
+                        <i class="fas fa-cog fa-spin"></i>
+                    </div>
                 </div>
                 <div class="col-xs-1"></div>
+
             </div>
 
             <hr>
+            <div ng-show="showChat" class="row Type Text:">
 
-            <fieldset class="clearfix:after">
-                <div class="row Type Text:">
+                <fieldset class="clearfix:after">
                     <div class="col-xs-12">
                         <div id="chat" class="container">
                             <ul id="mylist">
@@ -157,8 +190,9 @@
                             <center/><i ng-show="spinner " class="fas fa-spinner"></i>
                         </form>
                     </div>
-                </div>
-            </fieldset>
+                </fieldset>
+            </div>
+
         </div>
     </div>
 
