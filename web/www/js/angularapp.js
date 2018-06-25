@@ -257,8 +257,8 @@ app.service("UserService", function() {
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PERSONAL = "https://chatapisujoy-brave-hedgehog.mybluemix.net";
 var BASEURL = BASEURL_PERSONAL;
-var GUIURL = 'https://chatwebsujoy.mybluemix.net';
-//var GUIURL = 'http://localhost:3000';
+//var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $anchorScroll, $window, Notification, Socialshare, UserService, DataService) {
@@ -847,30 +847,22 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
 
     $scope.initApp = function() {
         console.log("##### InitApp called");
-        var uiConfig = {
-            signInSuccessUrl: GUIURL + '/#home',
-            signInOptions: [
-                // Leave the lines as is for the providers you want to offer your users.
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-                firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-                //firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-                //    firebase.auth.GithubAuthProvider.PROVIDER_ID,
-                firebase.auth.EmailAuthProvider.PROVIDER_ID,
-                //    firebase.auth.PhoneAuthProvider.PROVIDER_ID
-            ],
-            credentialHelper: firebaseui.auth.CredentialHelper.ACCOUNT_CHOOSER_COM,
-            // Terms of service url.
-            tosUrl: GUIURL + '/#tos'
-        };
+        // Initialize the FirebaseUI Widget using Firebase.
         var ui = new firebaseui.auth.AuthUI(firebase.auth());
-        // The start method will wait until the DOM is loaded.
-        ui.start('#firebaseui-auth-container', uiConfig);
-        //ui.disableAutoSignIn();
 
-        firebase.auth().onAuthStateChanged(function(user) {
-                thisUser = user;
-                if (user) {
-                    console.log("##### onAuthStateChanged called with valid user");
+        var uiConfig = {
+            callbacks: {
+                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+                    if (!DataService.isValidObject(authResult) || DataService.isValidObject(authResult.user)) {
+                        console.log("####Problem logging in....");
+                        return;
+                    }
+                    var user = authResult.user;
+                    // User successfully signed in.
+                    // Return type determines whether we continue the redirect automatically
+                    // or whether we leave that to developer to handle.
+                    //console.log("####AuthResult=" + JSON.stringify(authResult));
+                    console.log("##### signInSuccessWithAuthResult success!!" + JSON.stringify(user));
                     // User is signed in.
                     var displayName = user.displayName;
                     var email = user.email;
@@ -895,44 +887,92 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                     UserService.setLoggedInStatus(true);
                     $rootScope.username = user.displayName;
                     $rootScope.login_email = user.email;
-                    $location.path('/home');
-                    //user.getIdToken().then(function(accessToken) {
-                    //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
-                    /*document.getElementById('sign-in').textContent = 'Sign out';
-                    document.getElementById('account-details').textContent = JSON.stringify({
-                        displayName: displayName,
-                        email: email,
-                        emailVerified: emailVerified,
-                        phoneNumber: phoneNumber,
-                        photoURL: photoURL,
-                        uid: uid,
-                        accessToken: accessToken,
-                        providerData: providerData
-                    }, null, '  ');*/
-                    //});
                     $rootScope.$emit("CallSetupWebsocketsMethod", null);
                     $rootScope.$emit("alive", {});
                     $rootScope.$emit("CallStartTimerMethod", null);
-                    //$rootScope.$emit("CallGetOnlineUsersMethod", {});
-                    //$rootScope.$emit("NewLogin", {});
-                } else {
-                    // User is signed out.
-                    /*document.getElementById('sign-in-status').textContent = 'Signed out';
-                    document.getElementById('sign-in').textContent = 'Sign in';
-                    document.getElementById('account-details').textContent = 'null';*/
-                    /*var ui = new firebaseui.auth.AuthUI(firebase.auth());
-                    // The start method will wait until the DOM is loaded.
-                    ui.start('#firebaseui-auth-container', uiConfig);
-                    ui.disableAutoSignIn();*/
-                    console.log("##### onAuthStateChanged called with invalid user");
-                    ui.start('#firebaseui-auth-container', uiConfig);
-                    console.log("##### Prompting user login as no logged in user found");
-                    $rootScope.loggedIn = false;
+                    $location.path('/home');
+                    return true;
+                },
+                uiShown: function() {
+                    // The widget is rendered.
+                    // Hide the loader.
+                    document.getElementById('loader').style.display = 'none';
                 }
             },
-            function(error) {
-                console.log(error);
-            });
+            // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
+            //signInFlow: 'popup',
+            signInSuccessUrl: GUIURL + '/#home',
+            signInOptions: [
+                // Leave the lines as is for the providers you want to offer your users.
+                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+                firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+                firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+                //                firebase.auth.GithubAuthProvider.PROVIDER_ID,
+                firebase.auth.EmailAuthProvider.PROVIDER_ID
+                //               firebase.auth.PhoneAuthProvider.PROVIDER_ID
+            ],
+            // Terms of service url.
+            tosUrl: GUIURL + '/#tos'
+        };
+
+        ui.start('#firebaseui-auth-container', uiConfig);
+
+        /*
+                firebase.auth().onAuthStateChanged(function(user) {
+                        thisUser = user;
+                        if (user) {
+                            console.log("##### onAuthStateChanged called with valid user");
+                            // User is signed in.
+                            var displayName = user.displayName;
+                            var email = user.email;
+                            var emailVerified = user.emailVerified;
+                            var photoURL = user.photoURL;
+                            var uid = user.uid;
+                            var phoneNumber = user.phoneNumber;
+                            var providerData = user.providerData;
+                            var thisUser = {
+                                "fullname": user.displayName,
+                                "email": user.email,
+                                "phone": user.phoneNumber,
+                                "photoURL": user.photoURL,
+                                "emailVerified": user.emailVerified,
+                                "providerData": user.providerData
+                            }
+                            console.log("##### logged in user found");
+                            UserService.setLoggedIn(thisUser);
+                            $rootScope.loggedIn = true;
+                            $rootScope.login_email = user.email;
+                            //$scope.GetUserByEmail(user.email, 'login');
+                            UserService.setLoggedInStatus(true);
+                            $rootScope.username = user.displayName;
+                            $rootScope.login_email = user.email;
+                            $location.path('/home');
+                            //user.getIdToken().then(function(accessToken) {
+                            //document.getElementById('sign-in-status').textContent = 'Welcome ' + displayName;
+                            //});
+                            $rootScope.$emit("CallSetupWebsocketsMethod", null);
+                            $rootScope.$emit("alive", {});
+                            $rootScope.$emit("CallStartTimerMethod", null);
+                            //$rootScope.$emit("CallGetOnlineUsersMethod", {});
+                            //$rootScope.$emit("NewLogin", {});
+                        } else {
+                            // User is signed out.
+                            //document.getElementById('sign-in-status').textContent = 'Signed out';
+                            //document.getElementById('sign-in').textContent = 'Sign in';
+                            //document.getElementById('account-details').textContent = 'null';
+                            //var ui = new firebaseui.auth.AuthUI(firebase.auth());
+                            // The start method will wait until the DOM is loaded.
+                            //ui.start('#firebaseui-auth-container', uiConfig);
+                            //ui.disableAutoSignIn();
+                            console.log("##### onAuthStateChanged called with invalid user");
+                            ui.start('#firebaseui-auth-container', uiConfig);
+                            console.log("##### Prompting user login as no logged in user found");
+                            $rootScope.loggedIn = false;
+                        }
+                    },
+                    function(error) {
+                        console.log(error);
+                    });*/
     }
     $scope.gotoBottom = function() {
         // set the location.hash to the id of
@@ -1056,8 +1096,10 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
                 $rootScope.onlineUsers = activeUsers.users;
                 for (i = 0; i < $rootScope.onlineUsers.length; i++) {
                     var a = $rootScope.onlineUsers[i];
-                    if (a.photoURL == null || a.photoURL == "") {
-                        $scope.nophoto = true;
+                    if (!DataService.isValidObject(a.photoURL) || a.photoURL == null || a.photoURL == "") {
+                        $rootScope.onlineUsers[i].nophoto = true;
+                    } else {
+                        $rootScope.onlineUsers[i].nophoto = false;
                     }
                 }
                 //$scope.users.push(b);
@@ -1151,7 +1193,16 @@ app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $locatio
         }*/
     }
     $scope.HandleLogout = function() {
+        $rootScope.loggedIn = false;
         $rootScope.$emit("Logout", {});
+        firebase.auth().signOut().then(function() {
+            // Sign-out successful.
+            console.log("#### Successful Logout");
+            location.reload();
+        }).catch(function(error) {
+            // An error happened.
+            console.log("#### UnSuccessful Logout");
+        });
     }
     $scope.CreateNeed = function(need, emergency) {
         $scope.loginResult = "";

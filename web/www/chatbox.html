@@ -161,8 +161,8 @@
                 <legend>Welcome {{ username }} to Live Chatroom</legend>
                 <div class="col-xs-3" ng-click="StartChat(x);" ng-repeat="x in onlineUsers track by $index">
                     <div>
-                        <!--<img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" style="width:30%">-->
-                        <i ng-show="true" class="fas fa-user"></i>
+                        <img ng-hide="nophoto" class="card-img-top" src="{{x.photoURL}}" style="width:30%">
+                        <i ng-show="nophoto" class="fas fa-user"></i>
                         <p>{{ x.fullname }}</p>
 
                     </div>

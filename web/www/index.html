@@ -25,8 +25,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/6.11.5/sweetalert2.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-notification/0.3.6/angular-ui-notification.min.css">
     <link rel="stylesheet" href="css/landing-page.css" media="screen" type="text/css" />
-
     <script src="https://www.gstatic.com/firebasejs/5.0.1/firebase.js"></script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.css" />
+
     <script>
         // Initialize Firebase
         var config = {
@@ -230,12 +232,10 @@
     </div>
     <center>
         <div id="firebaseui-auth-container" ng-hide="loggedIn"></div>
-        <div id="sign-in-status"></div>
-        <div id="sign-in"></div>
-        <div id="account-details"></div>
+        <div id="loader" ng-hide="loggedIn">Loading...</div>
 
         <div ng-controller="ChatCtrl " class="container ">
-            <div class="col-md-9">
+            <div class="col-md-9" ng-show="loggedIn">
                 <div ng-view></div>
             </div>
         </div>
