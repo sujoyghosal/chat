@@ -257,8 +257,8 @@ app.service("UserService", function() {
 var BASEURL_LOCAL = "http://localhost:9000";
 var BASEURL_PERSONAL = "https://chatapisujoy-brave-hedgehog.mybluemix.net";
 var BASEURL = BASEURL_PERSONAL;
-//var GUIURL = 'https://chatwebsujoy.mybluemix.net';
-var GUIURL = 'http://localhost:3000';
+var GUIURL = 'https://chatwebsujoy.mybluemix.net';
+//var GUIURL = 'http://localhost:3000';
 var GEOCODEURL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyA_sdHo_cdsKULJF-upFVP26L7zs58_Zfg";
 
 app.controller("ChatCtrl", function($scope, $rootScope, $http, $filter, $location, $timeout, $interval, $anchorScroll, $window, Notification, Socialshare, UserService, DataService) {
